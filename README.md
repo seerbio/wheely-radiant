@@ -6,7 +6,7 @@
 This library requires Python 3.8+ and can be installed with pip:  
 
 ```shell
-pip install git+ssh://git@github.com/seerbio/wheely-pythia@main
+pip install wheely-pythia
 ```
 
 ## Basic Usage
