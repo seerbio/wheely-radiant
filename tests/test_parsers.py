@@ -8,8 +8,8 @@ def test_read_pythia_features(spark_session, real_pythia_features):
     """Test that we parse crux files correctly"""
     psms = read_pythia_features(real_pythia_features, spark_session)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
-    assert psms.data.count() == 1770
-    assert list(psms.spectrum_columns) == ["id"]
+    assert psms.data.count() == 1000
+    assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
 
     scores = {
@@ -32,15 +32,13 @@ def test_read_pythia_features(spark_session, real_pythia_features):
         "bNH3Count",
         "bH2OCount",
         "scanRank",
-        "pred_rt_diff",
-        "rel_pred_rt",
     }
     assert set(psms.score_columns) == scores
 
-    assert psms.scores.toPandas().shape == (1770, len(scores))
+    assert psms.scores.toPandas().shape == (1000, len(scores))
 
     target_df = psms.data.select(psms.targets).toPandas()
 
-    assert target_df.shape == (1770, 1)
-    assert target_df[target_df.columns[0]].sum() == 901
-    assert (~target_df[target_df.columns[0]]).sum() == 1770 - 901
+    assert target_df.shape == (1000, 1)
+    assert target_df[target_df.columns[0]].sum() == 691
+    assert (~target_df[target_df.columns[0]]).sum() == 1000 - 691

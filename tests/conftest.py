@@ -34,4 +34,4 @@ def spark_session(request):
 @pytest.fixture
 def real_pythia_features():
     """Return the path of a PSM file from Pythia"""
-    return Path("data/TODO.psms.scored")  # TODO
+    return Path("data/test.scored")
