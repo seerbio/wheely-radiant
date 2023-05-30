@@ -31,7 +31,13 @@ def spark_session(request):
     return spark
 
 
-@pytest.fixture(params=["data/test.scored", "data/1.mzML.subset.prq.pythiaDIA", ])
-def real_pythia_features(request):
-    """Return the path of a PSM file from Pythia"""
-    return Path(request.param)
+@pytest.fixture
+def pythia_features(request):
+    """Return the path of a Parquet (DIA) PSM file from Pythia"""
+    return Path("data/1.mzML.subset.prq.pythiaDIA")
+
+
+@pytest.fixture
+def pythia_hdf_features():
+    """Return the path of an HDF (DDA) PSM file from Pythia"""
+    return Path("data/test.scored")
