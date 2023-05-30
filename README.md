@@ -9,6 +9,13 @@ This library requires Python 3.8+ and can be installed with pip:
 pip install wheely-pythia
 ```
 
+To read the (to-be-deprecated) HDF-based `.scored` format you must
+install additional optional dependencies:
+
+```shell
+pip install 'wheely-pythia[hdf]'
+```
+
 ## Basic Usage
 
 This package provides a plugin for [Scry](https://github.com/seerbio/scry/)'s
