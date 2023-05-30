@@ -16,6 +16,7 @@ def read_pythia_features(
     scored_files,
     spark: _Optional[_SparkSession] = None,
     num_partitions: _Optional[int] = None,
+    **kwargs,
 ) -> _PsmDataset:
     """
     Read scored PSMs from Pythia `.psm.scored` files.
@@ -23,12 +24,17 @@ def read_pythia_features(
     Parameters
     ----------
     scored_files : str or tuple of str
-        Paths or URIs specifying a collection of PSMs in Pythia's `.scored` (HDF) format.
+        Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format, or
+        `.psm.scored` (HDF) format (to be deprecated). Note: all file paths must be in the same
+        format.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
     num_partitions: int (optional)
+        (Used only when reading HDF format)
         The number of partitions the list of files should be split into for reading.
         If unset (`None`), falls back to the Spark context's default.
+
+    Any other keyword arguments are passe to `read_pythia_parquet`, or ignored if reading HDF.
 
     Returns
     -------
@@ -39,6 +45,12 @@ def read_pythia_features(
         spark = _SparkSession.builder.getOrCreate()
 
     file_paths = [str(p) for p in _listify(scored_files)]
+
+    num_hdf = len(filter(lambda f: f.lower().endswith(".psm.scored"), file_paths))
+    if num_hdf == 0:
+        return read_pythia_parquet(file_paths, spark=spark, **kwargs)
+    elif num_hdf != len(file_paths):
+        raise ValueError("Can't read a mix of formats! Only some locations ended in '.psm.scored'")
 
     # Distribute the file paths
     files_rdd = spark.sparkContext.parallelize(
@@ -74,6 +86,68 @@ def read_pythia_features(
             "deltaScore",
             "meanErrorPPM",
             mean_abs_ppm_col,
+            "leftOverRawScanIntensity",
+            "extractedIonCount",
+            "aCount",
+            "bCount",
+            "yCount",
+            "b2Count",
+            "y2Count",
+            "yNH3Count",
+            "yH2OCount",
+            "bNH3Count",
+            "bH2OCount",
+            "scanRank",
+        ],
+        peptide_column="peptideId",
+        protein_column="fastaDescriptions",
+        protein_delim=";",
+    )
+
+
+def read_pythia_parquet(
+        locations,
+        spark: _Optional[_SparkSession] = None,
+) -> _PsmDataset:
+    """
+    Read scored PSMs from Pythia `.psm.scored` files.
+
+    Parameters
+    ----------
+    locations : str or tuple of str
+        Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
+    spark : :py:class:`pyspark.sql.SparkSession` (optional)
+        If `None`, creates a default session.
+
+    Returns
+    -------
+    PsmDataset
+        A :py:class:`wheely.mammoth.dataset.PsmDataset` object containing the parsed PSMs.
+    """
+    if not spark:
+        spark = _SparkSession.builder.getOrCreate()
+
+    file_paths = [str(p) for p in _listify(locations)]
+
+    psms_df = (
+        spark.read.parquet(file_paths)
+        .withColumn("target", _col("isDecoy").astype("boolean"))
+    )
+
+    _logging.debug("Read dataframe with columns: %s", psms_df.columns)
+
+    return _PsmDataset(
+        psms_df,
+        target_column="target",
+        spectrum_columns=["filename", "scanNumber"],
+        score_columns=[
+            "cosine_similarity",
+            "klDivergence",
+            "Score",
+            "hyperscore",
+            "deltaScore",
+            "meanErrorPPM",
+            "meanAbsoluteErrorPPM",
             "leftOverRawScanIntensity",
             "extractedIonCount",
             "aCount",
