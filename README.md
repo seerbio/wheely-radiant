@@ -11,6 +11,23 @@ pip install wheely-pythia
 
 ## Basic Usage
 
+This package provides a plugin for [Scry](https://github.com/seerbio/scry/)'s
+`read_existing` search backend.
+
+After installing `wheely-pythia` you may use the `pythia` engine to load
+existing Pythia results:
+
+```toml
+[search]
+backend = "read_existing"
+engine = "pythia"
+location = ["uri_one", "uri_two", ...]
+```
+
+(or similar in JSON or `dict` format)
+
+## Direct Usage
+
 To load raw PSM scores from a Pythia `.scored` file, use the function
 `read_pythia_features()`:
 
