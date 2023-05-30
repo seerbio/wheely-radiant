@@ -7,7 +7,10 @@ from typing import Optional as _Optional
 import h5py as _h5
 import pandas as _pd
 from pyspark.sql import SparkSession as _SparkSession
-from pyspark.sql.functions import col as _col
+from pyspark.sql.functions import (
+    col as _col,
+    input_file_name as _input_file_name,
+)
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
 
@@ -25,7 +28,7 @@ def read_pythia_features(
     ----------
     scored_files : str or tuple of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format, or
-        `.psm.scored` (HDF) format (to be deprecated). Note: all file paths must be in the same
+        `.scored` (HDF) format (to be deprecated). Note: all file paths must be in the same
         format.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
@@ -46,7 +49,7 @@ def read_pythia_features(
 
     file_paths = [str(p) for p in _listify(scored_files)]
 
-    num_hdf = len(filter(lambda f: f.lower().endswith(".psm.scored"), file_paths))
+    num_hdf = len(list(filter(lambda f: f.lower().endswith(".scored"), file_paths)))
     if num_hdf == 0:
         return read_pythia_parquet(file_paths, spark=spark, **kwargs)
     elif num_hdf != len(file_paths):
@@ -130,7 +133,8 @@ def read_pythia_parquet(
     file_paths = [str(p) for p in _listify(locations)]
 
     psms_df = (
-        spark.read.parquet(file_paths)
+        spark.read.parquet(*file_paths)
+        .withColumn("filename", _input_file_name())
         .withColumn("target", _col("isDecoy").astype("boolean"))
     )
 

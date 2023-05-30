@@ -20,7 +20,7 @@ def test_read_pythia_features(spark_session, pythia_features):
         "hyperscore",
         "deltaScore",
         "meanErrorPPM",
-        "meanAbsolueErrorPPM",  # typo in Pythia
+        "meanAbsoluteErrorPPM",
         "leftOverRawScanIntensity",
         "extractedIonCount",
         "aCount",
@@ -43,6 +43,7 @@ def test_read_pythia_features(spark_session, pythia_features):
     assert target_df.shape == (1000, 1)
     assert target_df[target_df.columns[0]].sum() == 691  # TODO
     assert (~target_df[target_df.columns[0]]).sum() == 1000 - 691  # TODO
+
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
     """Test that we parse crux files correctly"""
