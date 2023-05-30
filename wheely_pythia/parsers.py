@@ -49,11 +49,15 @@ def read_pythia_features(
 
     file_paths = [str(p) for p in _listify(scored_files)]
 
-    num_hdf = len(list(filter(lambda f: f.lower().endswith(".scored"), file_paths)))
+    num_hdf = len(
+        list(filter(lambda f: f.lower().endswith(".scored"), file_paths))
+    )
     if num_hdf == 0:
         return read_pythia_parquet(file_paths, spark=spark, **kwargs)
     elif num_hdf != len(file_paths):
-        raise ValueError("Can't read a mix of formats! Only some locations ended in '.psm.scored'")
+        raise ValueError(
+            "Can't read a mix of formats! Only some locations ended in '.psm.scored'"
+        )
 
     # Distribute the file paths
     files_rdd = spark.sparkContext.parallelize(
@@ -109,8 +113,8 @@ def read_pythia_features(
 
 
 def read_pythia_parquet(
-        locations,
-        spark: _Optional[_SparkSession] = None,
+    locations,
+    spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
     Read scored PSMs from Pythia `.psm.scored` files.
