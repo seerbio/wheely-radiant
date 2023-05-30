@@ -28,21 +28,21 @@ location = ["uri_one", "uri_two", ...]
 
 ## Direct Usage
 
-To load raw PSM scores from a Pythia `.scored` file, use the function
-`read_pythia_features()`:
+To load raw PSM scores from a Pythia Parquet (`.prq.pythiaDIA`) file, use the function
+`read_pythia_features()` (also supports to to-be-deprecated HDF5-based `.scored` format).
 
 ```pycon
 >>> from wheely_pythia import read_pythia_features
->>> ds = read_pythia_features("data/test.scored")
+>>> ds = read_pythia_features("data/1.mzML.subset.prq.pythiaDIA")
 >>> type(ds)
 <class 'wheely.mammoth.dataset.PsmDataset'>
->>> ds.scores.select(ds.score_columns[0]).describe().toPandas()
-  summary    cosine_similarity
+>>> ds.scores.select(ds.score_columns[1]).describe().toPandas()
+  summary            cosineSim
 0   count                 1000
-1    mean   0.4806335000000002
-2  stddev  0.32854787653388495
-3     min                  0.0
-4     max               0.9963
+1    mean   0.3947062000000001
+2  stddev  0.15665395271892263
+3     min               0.0315
+4     max               0.9926
 ```
 
 To read multiple files, pass a tuple, list, array, or series of file paths.
