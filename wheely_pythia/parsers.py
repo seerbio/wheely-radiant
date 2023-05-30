@@ -173,6 +173,7 @@ def read_pythia_parquet(
             "mzFound",
             "peptideSize",
             "ppmDiffMs1",
+            "rescore",
             "score",
             "scoreMax",
             "scoreMean",
