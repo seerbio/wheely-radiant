@@ -37,6 +37,7 @@ def test_read_pythia_features(spark_session, pythia_features):
         "mzFound",
         "peptideSize",
         "ppmDiffMs1",
+        "rescore",
         "score",
         "scoreMax",
         "scoreMean",
