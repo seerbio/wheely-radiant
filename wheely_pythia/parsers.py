@@ -181,8 +181,6 @@ def read_pythia_parquet(
             "scoreStDev",
         ],
         peptide_column="peptideWithMods",  # TODO: should include charge!!!
-        protein_column="fastaDescriptions",  # TODO: doesn't exist!
-        protein_delim=";",
     )
 
 
