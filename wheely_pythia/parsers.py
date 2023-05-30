@@ -9,7 +9,9 @@ import pandas as _pd
 from pyspark.sql import SparkSession as _SparkSession
 from pyspark.sql.functions import (
     col as _col,
+    concat as _concat,
     input_file_name as _input_file_name,
+    lit as _lit,
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
@@ -139,6 +141,10 @@ def read_pythia_parquet(
     psms_df = (
         spark.read.parquet(*file_paths)
         .withColumn("filename", _input_file_name())
+        .withColumn(
+            "precursor",
+            _concat(_col("peptideWithMods"), _lit("+"), _col("charge")),
+        )
         .withColumn("target", _col("isDecoy").astype("boolean"))
     )
 
@@ -180,7 +186,7 @@ def read_pythia_parquet(
             "scoreMedian",
             "scoreStDev",
         ],
-        peptide_column="peptideWithMods",  # TODO: should include charge!!!
+        peptide_column="precursor",
     )
 
 
