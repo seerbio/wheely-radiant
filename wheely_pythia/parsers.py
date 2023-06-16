@@ -4,7 +4,6 @@
 import logging as _logging
 from typing import Optional as _Optional
 
-import h5py as _h5
 import pandas as _pd
 from pyspark.sql import SparkSession as _SparkSession
 from pyspark.sql.functions import (
@@ -202,6 +201,8 @@ def read_pythia_scored_file(path) -> _pd.DataFrame:
     """
     Read a single Pythia `.scored` file as a :py:class:`pandas.DataFrame`
     """
+    # Optional dependency; only import if we know we need to use it
+    import h5py as _h5
 
     with _h5.File(path, "r") as f:
         df = _pd.DataFrame(f["psmResultsScoredDataset"][()])
