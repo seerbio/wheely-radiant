@@ -145,7 +145,7 @@ def read_pythia_parquet(
             "precursor",
             _concat(_col("peptideWithMods"), _lit("+"), _col("charge")),
         )
-        .withColumn("target", _col("isDecoy").astype("boolean"))
+        .withColumn("target", ~_col("isDecoy").astype("boolean"))
     )
 
     _logging.debug("Read dataframe with columns: %s", psms_df.columns)
