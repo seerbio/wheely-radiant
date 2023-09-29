@@ -1,4 +1,5 @@
 """Tests for parsing implementations"""
+import numpy as np
 import pyspark.sql
 
 from wheely_pythia.parsers import read_pythia_features
@@ -11,6 +12,12 @@ def test_read_pythia_features(spark_session, pythia_features):
     assert psms.data.count() == 1000
     assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
+
+    assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
+    np.testing.assert_array_equal(
+        psms.data.select("isDecoy").toPandas().values,
+        psms.data.select(~psms.targets).toPandas().values,
+    )
 
     scores = {
         "charge",
@@ -51,8 +58,8 @@ def test_read_pythia_features(spark_session, pythia_features):
     target_df = psms.data.select(psms.targets).toPandas()
 
     assert target_df.shape == (1000, 1)
-    assert target_df[target_df.columns[0]].sum() == 481
-    assert (~target_df[target_df.columns[0]]).sum() == 1000 - 481
+    assert target_df[target_df.columns[0]].sum() == 1000 - 481
+    assert (~target_df[target_df.columns[0]]).sum() == 481
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
@@ -62,6 +69,12 @@ def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
     assert psms.data.count() == 1000
     assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
+
+    assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
+    np.testing.assert_array_equal(
+        psms.data.select("isDecoy").toPandas().values,
+        psms.data.select(~psms.targets).toPandas().values,
+    )
 
     scores = {
         "cosine_similarity",
