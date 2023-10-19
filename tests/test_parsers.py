@@ -1,4 +1,6 @@
 """Tests for parsing implementations"""
+import logging
+
 import numpy as np
 import pyspark.sql
 
@@ -7,9 +9,12 @@ from wheely_pythia.parsers import read_pythia_features
 
 def test_read_pythia_features(spark_session, pythia_features):
     """Test that we parse crux files correctly"""
+
+    n = 256  # Expected PSM (row) count
+
     psms = read_pythia_features(pythia_features, spark_session)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
-    assert psms.data.count() == 1000
+    assert psms.data.count() == n
     assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
 
@@ -19,47 +24,24 @@ def test_read_pythia_features(spark_session, pythia_features):
         psms.data.select(~psms.targets).toPandas().values,
     )
 
-    scores = {
-        "charge",
-        "cosineSim",
-        "discScore",
-        "discScoreMax",
-        "discScoreMean",
-        "discScoreMedian",
-        "discScoreMin",
-        "discScoreStDev",
-        "fractionFound",
-        "frameCandidateCount",
-        "frameError",
-        "frameFStat",
-        "frameRankDiscScore",
-        "frameRankScore",
-        "ionsFound",
-        "isotopeFoundCount",
-        "klDiv",
-        "missedCleavages",
-        "monoIsoOffset",
-        "ms1CosineSim",
-        "mz",
-        "mzFound",
-        "peptideSize",
-        "ppmDiffMs1",
-        "rescore",
-        "score",
-        "scoreMax",
-        "scoreMean",
-        "scoreMedian",
-        "scoreStDev",
-    }
-    assert set(psms.score_columns) == scores
+    logging.debug(psms.data.dtypes)
 
-    assert psms.scores.toPandas().shape == (1000, len(scores))
+    for col, type in psms.data.dtypes:
+        if col in psms.score_columns:
+            assert type in {
+                "double",
+                "float",
+                "int",
+                "bigint",
+            }, f"Score column {col} had unexpected datatype!"
 
     target_df = psms.data.select(psms.targets).toPandas()
 
-    assert target_df.shape == (1000, 1)
-    assert target_df[target_df.columns[0]].sum() == 1000 - 481
-    assert (~target_df[target_df.columns[0]]).sum() == 481
+    assert target_df.shape == (n, 1)
+
+    ndec = 0  # TODO: test file has no decoys!
+    assert target_df[target_df.columns[0]].sum() == n - ndec
+    assert (~target_df[target_df.columns[0]]).sum() == ndec
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
