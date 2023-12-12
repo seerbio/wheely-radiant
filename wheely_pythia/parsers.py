@@ -261,6 +261,7 @@ def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
         "cosineSim100MS1Iso2",
         "cosineSim20MS1",
         "cosineSim45MS1",
+        # "cosineSimShadowsToAnchorVec",
         "cosineSimSpectrum",
         "cosineSimSum100",
         "cosineSimSum20",
@@ -279,7 +280,6 @@ def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
         # 'mzFoundMeanVec',
         # 'mzFoundStDevVec',
         # 'mzSearchedVec',
-        # 'peakPointCountFoundVec',
         "peakShapeRatio1",
         "peakShapeRatio2",
         "peakShapeRatio3",
@@ -287,7 +287,7 @@ def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
         # 'proteinGroup',
         # 'qValue',                         # From classifier
         "scanIonCount",
-        "scanNumber",
+        # "scanNumber",
         "scanNumberCandidateCount",
         # 'scanTime',                       # Reencoded below
         # 'scanTimePredicted',              # Reencoded below
