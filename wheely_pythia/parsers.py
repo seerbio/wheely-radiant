@@ -2,10 +2,19 @@
 `parsers`: module for Pythia results parsing functions
 """
 import logging as _logging
-from typing import Optional as _Optional
+from typing import (
+    Dict as _Dict,
+    Iterable as _Iterable,
+    List as _List,
+    Optional as _Optional,
+    Union as _Union,
+)
 
 import pandas as _pd
-from pyspark.sql import SparkSession as _SparkSession
+from pyspark.sql import (
+    Column as _Column,
+    SparkSession as _SparkSession,
+)
 from pyspark.sql.functions import (
     col as _col,
     concat as _concat,
@@ -38,7 +47,7 @@ def read_pythia_features(
         The number of partitions the list of files should be split into for reading.
         If unset (`None`), falls back to the Spark context's default.
 
-    Any other keyword arguments are passe to `read_pythia_parquet`, or ignored if reading HDF.
+    Any other keyword arguments are passed to `read_pythia_parquet`, or ignored if reading HDF.
 
     Returns
     -------
@@ -115,15 +124,19 @@ def read_pythia_features(
 
 def read_pythia_parquet(
     locations,
+    score_columns: _Union[str, _Iterable[str], _Dict[str, _Column]] = None,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
-    Read scored PSMs from Pythia `.psm.scored` files.
+    Read scored PSMs from Pythia `.pythiaDIA` files.
 
     Parameters
     ----------
-    locations : str or tuple of str
+    locations : str or iterable of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
+    score_columns : str, list of str, or dict of `{name: pyspark.sql.Column}` specifying the
+                    `score_columns` of the returned dataset. See also `pythia_scores_default()` and
+                    `pythia_scores_svm()` which return collections compatible with this parameter.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -149,48 +162,77 @@ def read_pythia_parquet(
 
     _logging.debug("Read dataframe with columns: %s", psms_df.columns)
 
+    if isinstance(score_columns, _Dict):
+        psms_df = psms_df.withColumns(score_columns)
+
+        score_columns = score_columns.keys()
+
+    score_columns = _listify(score_columns)
+
     return _PsmDataset(
         psms_df,
         target_column="target",
         spectrum_columns=["filename", "scanNumber"],
-        score_columns=[
-            "b2Corr",
-            "b2b3CosineSimSum",
-            "b3Corr",
-            "charge",
-            "cosineSim100MS1",
-            "cosineSim100MS1Iso1",
-            "cosineSim100MS1Iso2",
-            "cosineSim20MS1",
-            "cosineSim45MS1",
-            "cosineSimSpectrum",
-            "cosineSimSum100",
-            "cosineSimSum20",
-            "cosineSimSum45",
-            "decoyRatio",
-            "discriminateScore",
-            "iRTPredicted",
-            "klDivSpectrum",
-            "klDivSum",
-            "mass",
-            "matrixError",
-            "matrixPVal",
-            "matrixWeight",
-            "peakShapeRatio1",
-            "peakShapeRatio2",
-            "peakShapeRatio3",
-            "scanIonCount",
-            "scanNumberCandidateCount",
-            "scanTime",
-            "scanTimePredicted",
-            "theoFragmentCount",
-            "xCorr",
-            "y2Corr",
-            "y2y3CosineSimSum",
-            "y3Corr",
-        ],
+        score_columns=score_columns,
         peptide_column="precursor",
     )
+
+
+def pythia_scores_default() -> _List[str]:
+    """
+    Returns
+    -------
+    The default set of score columns from Pythia, excluding the output of its NN classifier.
+    """
+    return [
+        "b2Corr",
+        "b2b3CosineSimSum",
+        "b3Corr",
+        "charge",
+        "cosineSim100MS1",
+        "cosineSim100MS1Iso1",
+        "cosineSim100MS1Iso2",
+        "cosineSim20MS1",
+        "cosineSim45MS1",
+        "cosineSimSpectrum",
+        "cosineSimSum100",
+        "cosineSimSum20",
+        "cosineSimSum45",
+        "decoyRatio",
+        "discriminateScore",
+        "iRTPredicted",
+        "klDivSpectrum",
+        "klDivSum",
+        "mass",
+        "matrixError",
+        "matrixPVal",
+        "matrixWeight",
+        "peakShapeRatio1",
+        "peakShapeRatio2",
+        "peakShapeRatio3",
+        "scanIonCount",
+        "scanNumberCandidateCount",
+        "scanTime",
+        "scanTimePredicted",
+        "theoFragmentCount",
+        "xCorr",
+        "y2Corr",
+        "y2y3CosineSimSum",
+        "y3Corr",
+    ]
+
+
+def pythia_score_classifier() -> str:
+    """
+    Returns
+    -------
+    The name of Pythia's NN classifier score column.
+    """
+    return "classifierScore"
+
+
+def pythia_scores_svm() -> _Dict[str, _Column]:
+    raise NotImplementedError()
 
 
 def read_pythia_scored_rows(path) -> iter:

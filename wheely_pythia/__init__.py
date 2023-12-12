@@ -19,3 +19,9 @@ except ImportError:
 
 # Here is where we can export public functions and classes.
 from .parsers import read_pythia_features
+
+from .parsers import (
+    pythia_scores_default,
+    pythia_score_classifier,
+    pythia_scores_svm,
+)
