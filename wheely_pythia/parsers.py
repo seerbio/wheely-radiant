@@ -26,7 +26,7 @@ from wheely.mammoth.utils import listify as _listify
 
 
 def read_pythia_features(
-    scored_files,
+    location,
     spark: _Optional[_SparkSession] = None,
     num_partitions: _Optional[int] = None,
     **kwargs,
@@ -36,7 +36,7 @@ def read_pythia_features(
 
     Parameters
     ----------
-    scored_files : str or tuple of str
+    location : str or tuple of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format, or
         `.scored` (HDF) format (to be deprecated). Note: all file paths must be in the same
         format.
@@ -57,7 +57,7 @@ def read_pythia_features(
     if not spark:
         spark = _SparkSession.builder.getOrCreate()
 
-    file_paths = [str(p) for p in _listify(scored_files)]
+    file_paths = [str(p) for p in _listify(location)]
 
     num_hdf = len(
         list(filter(lambda f: f.lower().endswith(".scored"), file_paths))
@@ -123,7 +123,7 @@ def read_pythia_features(
 
 
 def read_pythia_parquet(
-    locations,
+    location,
     score_columns: _Optional[
         _Union[str, _Iterable[str], _Dict[str, _Column]]
     ] = None,
@@ -134,7 +134,7 @@ def read_pythia_parquet(
 
     Parameters
     ----------
-    locations : str or iterable of str
+    location : str or iterable of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
     score_columns : str, list of str, or dict of `{name: pyspark.sql.Column}` specifying the
                     `score_columns` of the returned dataset. See also `pythia_scores_default()` and
@@ -150,7 +150,7 @@ def read_pythia_parquet(
     if not spark:
         spark = _SparkSession.builder.getOrCreate()
 
-    file_paths = [str(p) for p in _listify(locations)]
+    file_paths = [str(p) for p in _listify(location)]
 
     psms_df = (
         spark.read.parquet(*file_paths)
