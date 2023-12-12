@@ -152,7 +152,7 @@ def read_pythia_parquet(
     return _PsmDataset(
         psms_df,
         target_column="target",
-        spectrum_columns=["filename", "scanNumber"],
+        spectrum_columns=["filename", "precursor", "scanNumber"],
         score_columns=[
             "b2Corr",
             "b2b3CosineSimSum",

@@ -15,7 +15,11 @@ def test_read_pythia_features(spark_session, pythia_features):
     psms = read_pythia_features(pythia_features, spark_session)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n
-    assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
+    assert list(psms.spectrum_columns) == [
+        "filename",
+        "precursor",
+        "scanNumber",
+    ]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
 
     assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
