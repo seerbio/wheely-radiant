@@ -4,15 +4,30 @@ import logging
 import numpy as np
 import pyspark.sql
 
-from wheely_pythia.parsers import read_pythia_features
+import pytest
+
+from wheely_pythia.parsers import *
 
 
-def test_read_pythia_features(spark_session, pythia_features):
+@pytest.mark.parametrize(
+    "score_cols",
+    [
+        None,
+        pythia_scores_default,
+        pythia_score_classifier,
+        pythia_scores_svm,
+    ],
+)
+def test_read_pythia_features(spark_session, pythia_features, score_cols):
     """Test that we parse crux files correctly"""
 
     n = 256  # Expected PSM (row) count
 
-    psms = read_pythia_features(pythia_features, spark_session)
+    psms = read_pythia_features(
+        pythia_features,
+        spark_session,
+        score_columns=score_cols() if callable(score_cols) else score_cols,
+    )
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n
     assert list(psms.spectrum_columns) == [
