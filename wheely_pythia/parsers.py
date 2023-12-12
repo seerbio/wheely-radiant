@@ -164,6 +164,9 @@ def read_pythia_parquet(
 
     _logging.debug("Read dataframe with columns: %s", psms_df.columns)
 
+    if score_columns is None:
+        score_columns = pythia_scores_default()
+
     if isinstance(score_columns, _Dict):
         psms_df = psms_df.withColumns(score_columns)
 
