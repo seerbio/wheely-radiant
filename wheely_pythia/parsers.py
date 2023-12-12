@@ -124,7 +124,9 @@ def read_pythia_features(
 
 def read_pythia_parquet(
     locations,
-    score_columns: _Union[str, _Iterable[str], _Dict[str, _Column]] = None,
+    score_columns: _Optional[
+        _Union[str, _Iterable[str], _Dict[str, _Column]]
+    ] = None,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
