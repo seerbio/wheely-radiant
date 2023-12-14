@@ -191,10 +191,17 @@ def read_pythia_parquet(
     if callable(scoring):
         scoring = scoring()
 
+    _logger.debug("Got scoring scheme: %s", scoring)
+
     if isinstance(scoring, _Dict):
         psms_df = psms_df.withColumns(scoring)
 
         scoring = scoring.keys()
+    else:
+        # Ensure we have an iterable, not a single string
+        scoring = _listify(scoring)
+
+    _logger.debug("Proceeding with score_columns: %s", scoring)
 
     assert all(
         s in psms_df.columns for s in scoring
