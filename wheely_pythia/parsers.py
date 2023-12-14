@@ -3,6 +3,7 @@
 """
 import logging as _logging
 from typing import (
+    Callable as _Callable,
     Dict as _Dict,
     Iterable as _Iterable,
     Optional as _Optional,
@@ -124,7 +125,12 @@ def read_pythia_features(
 def read_pythia_parquet(
     location,
     score_columns: _Optional[
-        _Union[str, _Iterable[str], _Dict[str, _Column]]
+        _Union[
+            str,
+            _Iterable[str],
+            _Dict[str, _Column],
+            _Callable[[], _Union[str, _Iterable[str], _Dict[str, _Column]]],
+        ]
     ] = None,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
@@ -135,9 +141,10 @@ def read_pythia_parquet(
     ----------
     location : str or iterable of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
-    score_columns : str, list of str, or dict of `{name: pyspark.sql.Column}` specifying the
-                    `score_columns` of the returned dataset. See also `pythia_scores_default()` and
-                    `pythia_scores_svm()` which return collections compatible with this parameter.
+    score_columns : str, list of str, dict of `{name: pyspark.sql.Column}`, or `callable` specifying
+                    the `score_columns` of the returned dataset. See also `pythia_scores_default()`
+                    and `pythia_scores_svm()` which return collections compatible with this parameter.
+                    If a callable, it must accept no arguments and produce a suitable value.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -166,7 +173,10 @@ def read_pythia_parquet(
     _logging.debug("Read dataframe with columns: %s", psms_df.columns)
 
     if score_columns is None:
-        score_columns = pythia_scores_default()
+        score_columns = pythia_scores_default
+
+    if callable(score_columns):
+        score_columns = score_columns()
 
     if isinstance(score_columns, _Dict):
         psms_df = psms_df.withColumns(score_columns)
