@@ -2,11 +2,10 @@
 `parsers`: module for Pythia results parsing functions
 """
 import logging as _logging
-import struct as _struct
 from typing import (
+    Callable as _Callable,
     Dict as _Dict,
     Iterable as _Iterable,
-    List as _List,
     Optional as _Optional,
     Union as _Union,
 )
@@ -23,6 +22,10 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
+
+from .scoring import get_scheme as _get_scoring_scheme
+
+_logger = _logging.getLogger(__name__)
 
 
 def read_pythia_features(
@@ -82,7 +85,7 @@ def read_pythia_features(
         "target", _col("isDecoy") == 0
     )
 
-    _logging.debug("Read dataframe with columns: %s", psms_df.columns)
+    _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
     # Allow for typo in Pythia
     mean_abs_ppm_col = (
@@ -124,8 +127,13 @@ def read_pythia_features(
 
 def read_pythia_parquet(
     location,
-    score_columns: _Optional[
-        _Union[str, _Iterable[str], _Dict[str, _Column]]
+    scoring: _Optional[
+        _Union[
+            str,
+            _Iterable[str],
+            _Dict[str, _Column],
+            _Callable[[], _Union[str, _Iterable[str], _Dict[str, _Column]]],
+        ]
     ] = None,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
@@ -136,9 +144,13 @@ def read_pythia_parquet(
     ----------
     location : str or iterable of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
-    score_columns : str, list of str, or dict of `{name: pyspark.sql.Column}` specifying the
-                    `score_columns` of the returned dataset. See also `pythia_scores_default()` and
-                    `pythia_scores_svm()` which return collections compatible with this parameter.
+    scoring : str, list of str, dict of `{name: pyspark.sql.Column}`, or `callable` specifying the
+              `score_columns` of the returned dataset. See also `pythia_scores_default()` and
+              `pythia_scores_svm()` which return collections compatible with this parameter. If a
+              str, it will be treated as the name of a registered scoring scheme (see
+              `wheely_pythia.scoring`), or if no such scheme exists, the name of a single column.
+              An error will occur if no matches are found in the scheme registry or in the specified
+              files. If a callable, it must accept no arguments and produce a suitable value.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -164,217 +176,44 @@ def read_pythia_parquet(
         .withColumn("target", ~_col("isDecoy").astype("boolean"))
     )
 
-    _logging.debug("Read dataframe with columns: %s", psms_df.columns)
+    _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
-    if score_columns is None:
-        score_columns = pythia_scores_default()
+    if scoring is None:
+        scoring = "default"
 
-    if isinstance(score_columns, _Dict):
-        psms_df = psms_df.withColumns(score_columns)
+    if isinstance(scoring, str):
+        # Check if this is a defined scoring scheme
+        try:
+            scoring = _get_scoring_scheme(scoring)
+        except KeyError:
+            scoring = [scoring]
 
-        score_columns = score_columns.keys()
+    if callable(scoring):
+        scoring = scoring()
 
-    score_columns = _listify(score_columns)
+    _logger.debug("Got scoring scheme: %s", scoring)
+
+    if isinstance(scoring, _Dict):
+        psms_df = psms_df.withColumns(scoring)
+
+        scoring = scoring.keys()
+    else:
+        # Ensure we have an iterable, not a single string
+        scoring = _listify(scoring)
+
+    _logger.debug("Proceeding with score_columns: %s", scoring)
+
+    assert all(
+        s in psms_df.columns for s in scoring
+    ), f"Missing scoring columns! Could not find: {list(set(scoring) - set(psms_df.columns))} in {list(psms_df.columns)}"
 
     return _PsmDataset(
         psms_df,
         target_column="target",
         spectrum_columns=["filename", "precursor", "scanNumber"],
-        score_columns=score_columns,
+        score_columns=scoring,
         peptide_column="precursor",
     )
-
-
-def pythia_scores_default() -> _List[str]:
-    """
-    Returns
-    -------
-    The default set of score columns from Pythia, excluding the output of its NN classifier.
-    """
-    return [
-        "discriminateScore",  # Moved to first, as this is the "primary" score
-        "b2Corr",
-        "b2b3CosineSimSum",
-        "b3Corr",
-        "charge",
-        # "classifierScore",                # From classifier
-        "cosineSim100MS1",
-        "cosineSim100MS1Iso1",
-        "cosineSim100MS1Iso2",
-        "cosineSim20MS1",
-        "cosineSim45MS1",
-        "cosineSimSpectrum",
-        "cosineSimSum100",
-        "cosineSimSum20",
-        "cosineSimSum45",
-        # "decoyRatio",                     # From classifier
-        "iRTPredicted",
-        "klDivSpectrum",
-        "klDivSum",
-        "mass",
-        "matrixError",
-        "matrixPVal",
-        "matrixWeight",
-        "peakShapeRatio1",
-        "peakShapeRatio2",
-        "peakShapeRatio3",
-        # "qValue",                         # From classifier
-        "scanIonCount",
-        "scanNumberCandidateCount",
-        "scanTime",
-        "scanTimePredicted",
-        "theoFragmentCount",
-    ]
-
-
-def pythia_score_classifier() -> str:
-    """
-    Returns
-    -------
-    The name of Pythia's NN classifier score column.
-    """
-    return "classifierScore"
-
-
-def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
-    """
-    Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA results.
-
-    Parameters
-    ----------
-    n_vec_scores The number of scores to decode from each vector-typed score column
-
-    Returns
-    -------
-    A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
-    """
-    # Take a list of all known scores; comment out those that aren't directly usable
-    pythia_scores = [
-        "discriminateScore",  # Moved to first, as this is the "primary" score
-        "b2Corr",
-        "b2b3CosineSimSum",
-        "b3Corr",
-        # 'charge',                         # Reencoded below
-        # 'classifierScore',                # From classifier
-        "cosineSim100MS1",
-        "cosineSim100MS1Iso1",
-        "cosineSim100MS1Iso2",
-        "cosineSim20MS1",
-        "cosineSim45MS1",
-        # "cosineSimShadowsToAnchorVec",
-        "cosineSimSpectrum",
-        "cosineSimSum100",
-        "cosineSimSum20",
-        "cosineSimSum45",
-        # 'cosineSimToAnchorVec',
-        # 'decoyRatio',                     # From classifier
-        "iRTPredicted",
-        # 'intensityFoundMaxVec',
-        # 'isDecoy',
-        "klDivSpectrum",
-        "klDivSum",
-        "mass",
-        "matrixError",
-        "matrixPVal",
-        "matrixWeight",
-        # 'mzFoundMeanVec',
-        # 'mzFoundStDevVec',
-        # 'mzSearchedVec',
-        "peakShapeRatio1",
-        "peakShapeRatio2",
-        "peakShapeRatio3",
-        # 'peptideStringWithMods',
-        # 'proteinGroup',
-        # 'qValue',                         # From classifier
-        "scanIonCount",
-        # "scanNumber",
-        "scanNumberCandidateCount",
-        # 'scanTime',                       # Reencoded below
-        # 'scanTimePredicted',              # Reencoded below
-        # 'targetKey',
-        "theoFragmentCount",
-        # 'theoIntensityVec',
-    ]
-
-    # Now we construct additional scores from some
-    # that we don't use directly
-
-    addl_scores = {
-        "absDeltaScanTime": _fns.abs(
-            _fns.col("scanTime") - _fns.col("scanTimePredicted")
-        ),
-        # 1-hot encoding for charge
-        **{
-            f"charge{i}": _fns.when(
-                _fns.col("charge") == i, _fns.lit(1.0)
-            ).otherwise(0.0)
-            for i in [1, 2, 3, 4]
-        },
-    }
-
-    # Now add the various scores that must be parsed from arrays;
-    # dict value is default value
-    arr_scores = {
-        "cosineSimToAnchorVec": 0.0,
-        # "intensityFoundMaxVec": 0.0,        # Reencoded below
-        # "mzFoundMeanVec": 0.0,              # Reencoded below
-        "mzFoundStDevVec": 0.1,
-        # "mzSearchedVec": 0.0,               # Reencoded below
-        # "theoIntensityVec": 0.0,            # Reencoded below
-    }
-
-    to_double_array = _fns.udf(
-        lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
-        returnType="Array<double>",
-    )
-
-    for score, default in arr_scores.items():
-        arr_col = to_double_array(score)
-
-        for i in range(n_vec_scores):
-            val = _fns.coalesce(arr_col.getItem(i), _fns.lit(default))
-            if default > 0.0:
-                val = _fns.least(val, _fns.lit(default))
-            addl_scores[f"{score}_{i}"] = val
-
-    # Convert this pair of arrays to an individual mass deltas
-    _foundmz = to_double_array("mzFoundMeanVec")
-    _theomz = to_double_array("mzSearchedVec")
-    _max_mz_delta = 0.05
-    for i in range(n_vec_scores):
-        addl_scores[f"absDeltaMz_{i}"] = _fns.when(
-            # Handle peaks that weren't found
-            (_foundmz.getItem(i) == 0.0) | _fns.isnull(_foundmz.getItem(i)),
-            _fns.lit(_max_mz_delta),
-        ).otherwise(
-            _fns.least(
-                _fns.abs(_foundmz.getItem(i) - _theomz.getItem(i)),
-                _fns.lit(_max_mz_delta),
-            )
-        )
-
-    # Convert this pair of arrays to an individual absolute log ratios
-    _foundint = to_double_array("intensityFoundMaxVec")
-    _totfoundint = _fns.aggregate(_foundint, _fns.lit(0.0), lambda a, b: a + b)
-    _theoint = to_double_array("theoIntensityVec")
-    _tottheoint = _fns.aggregate(_theoint, _fns.lit(0.0), lambda a, b: a + b)
-    _max_log_inten_ratio = 4.0
-    for i in range(n_vec_scores):
-        addl_scores[f"absLogNormIntenRatio_{i}"] = _fns.least(
-            _fns.lit(10.0),
-            _fns.abs(
-                _fns.log(
-                    10.0,
-                    (_foundint.getItem(i) / _totfoundint)
-                    / (_theoint.getItem(i) / _tottheoint),
-                )
-            ),
-        )
-
-    return {
-        **{c: _fns.col(c) for c in pythia_scores},
-        **addl_scores,
-    }
 
 
 def read_pythia_scored_rows(path) -> iter:

@@ -6,6 +6,7 @@ import pyspark.sql
 
 import pytest
 
+from wheely_pythia.scoring import _schemes
 from wheely_pythia.parsers import *
 
 
@@ -13,9 +14,8 @@ from wheely_pythia.parsers import *
     "score_cols",
     [
         None,
-        pythia_scores_default,
-        pythia_score_classifier,
-        pythia_scores_svm,
+        *_schemes.keys(),
+        *_schemes.values(),
     ],
 )
 def test_read_pythia_features(spark_session, pythia_features, score_cols):
@@ -26,7 +26,7 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
     psms = read_pythia_features(
         pythia_features,
         spark_session,
-        score_columns=score_cols() if callable(score_cols) else score_cols,
+        scoring=score_cols() if callable(score_cols) else score_cols,
     )
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n
