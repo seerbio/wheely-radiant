@@ -6,6 +6,7 @@ import pyspark.sql
 
 import pytest
 
+from wheely_pythia import pythia_score_classifier, pythia_scores_svm
 from wheely_pythia.parsers import *
 
 
