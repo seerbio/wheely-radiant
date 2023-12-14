@@ -1,10 +1,21 @@
 """
 `wheely_pythia.scoring` -- different scoring schemes for use with PythiaDIA
 """
+import logging as _logging
 import struct as _struct
-from typing import Dict as _Dict, List as _List
+from typing import (
+    Dict as _Dict,
+    Iterable as _Iterable,
+    List as _List,
+)
+
+# Once the min supported version reaches 3.10, the standard library should
+# be used like so -> from importlib.metadata import entry_points
+from importlib_metadata import entry_points
 
 from pyspark.sql import Column as _Column, functions as _fns
+
+_logger = _logging.getLogger(__name__)
 
 
 def pythia_scores_default() -> _List[str]:
@@ -197,3 +208,64 @@ def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
         **{c: _fns.col(c) for c in pythia_scores},
         **addl_scores,
     }
+
+
+_schemes = {
+    "default": pythia_scores_default,
+    "nn": pythia_score_classifier,
+    "svm": pythia_scores_svm,
+}
+_plugins = None
+
+
+def register_scheme(name, scheme, clobber=False):
+    assert isinstance(scheme, dict) or isinstance(scheme, _Iterable)
+
+    if name in _schemes:
+        if not clobber:
+            raise RuntimeError(
+                f"Backend {name} is already registered and `clobber` is False"
+            )
+
+        _logger.warning(
+            f"Replacing already-registered scoring scheme {name} with {scheme}"
+        )
+
+    _schemes[name] = scheme
+
+
+def _get_plugins():
+    """Return a dict of all installed Plugins as {name: scheme}."""
+
+    plugins = entry_points(group="wheely_pythia.scoring.plugins")
+
+    pluginmap = {}
+    for plugin in plugins:
+        pluginmap[plugin.name] = plugin
+
+    for k, v in pluginmap.items():
+        _logger.debug(f"loading {k}")
+        pluginmap[k] = v.load()
+
+    return pluginmap
+
+
+def get_scheme(name):
+    """Fetch a scheme with the given name."""
+    global _schemes, _plugins
+    try:
+        return _schemes[name]
+    except KeyError as e:
+        if _plugins is None:
+            _plugins = _get_plugins()
+
+        if _plugins is not None and name in _plugins:
+            return _plugins[name]
+
+        all_keys = set(_schemes.keys())
+        if _plugins is not None:
+            all_keys = all_keys.union(_plugins.keys())
+
+        raise KeyError(
+            f"No such scheme: {name}. Only {str(all_keys)} are supported"
+        ) from e
