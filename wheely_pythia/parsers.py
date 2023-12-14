@@ -24,6 +24,8 @@ from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
 from wheely_pythia import pythia_scores_default
 
+_logger = _logging.getLogger(__name__)
+
 
 def read_pythia_features(
     location,
@@ -82,7 +84,7 @@ def read_pythia_features(
         "target", _col("isDecoy") == 0
     )
 
-    _logging.debug("Read dataframe with columns: %s", psms_df.columns)
+    _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
     # Allow for typo in Pythia
     mean_abs_ppm_col = (
@@ -170,7 +172,7 @@ def read_pythia_parquet(
         .withColumn("target", ~_col("isDecoy").astype("boolean"))
     )
 
-    _logging.debug("Read dataframe with columns: %s", psms_df.columns)
+    _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
     if score_columns is None:
         score_columns = pythia_scores_default
