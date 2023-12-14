@@ -22,7 +22,8 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
-from wheely_pythia import pythia_scores_default
+
+from .scoring import get_scheme as _get_scoring_scheme
 
 _logger = _logging.getLogger(__name__)
 
@@ -126,7 +127,7 @@ def read_pythia_features(
 
 def read_pythia_parquet(
     location,
-    score_columns: _Optional[
+    scoring: _Optional[
         _Union[
             str,
             _Iterable[str],
@@ -143,10 +144,13 @@ def read_pythia_parquet(
     ----------
     location : str or iterable of str
         Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
-    score_columns : str, list of str, dict of `{name: pyspark.sql.Column}`, or `callable` specifying
-                    the `score_columns` of the returned dataset. See also `pythia_scores_default()`
-                    and `pythia_scores_svm()` which return collections compatible with this parameter.
-                    If a callable, it must accept no arguments and produce a suitable value.
+    scoring : str, list of str, dict of `{name: pyspark.sql.Column}`, or `callable` specifying the
+              `score_columns` of the returned dataset. See also `pythia_scores_default()` and
+              `pythia_scores_svm()` which return collections compatible with this parameter. If a
+              str, it will be treated as the name of a registered scoring scheme (see
+              `wheely_pythia.scoring`), or if no such scheme exists, the name of a single column.
+              An error will occur if no matches are found in the scheme registry or in the specified
+              files. If a callable, it must accept no arguments and produce a suitable value.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -174,24 +178,33 @@ def read_pythia_parquet(
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
-    if score_columns is None:
-        score_columns = pythia_scores_default
+    if scoring is None:
+        scoring = "default"
 
-    if callable(score_columns):
-        score_columns = score_columns()
+    if isinstance(scoring, str):
+        # Check if this is a defined scoring scheme
+        try:
+            scoring = _get_scoring_scheme(scoring)
+        except KeyError:
+            scoring = [scoring]
 
-    if isinstance(score_columns, _Dict):
-        psms_df = psms_df.withColumns(score_columns)
+    if callable(scoring):
+        scoring = scoring()
 
-        score_columns = score_columns.keys()
+    if isinstance(scoring, _Dict):
+        psms_df = psms_df.withColumns(scoring)
 
-    score_columns = _listify(score_columns)
+        scoring = scoring.keys()
+
+    assert all(
+        s in psms_df.columns for s in scoring
+    ), f"Missing scoring columns! Could not find: {list(set(scoring) - set(psms_df.columns))} in {list(psms_df.columns)}"
 
     return _PsmDataset(
         psms_df,
         target_column="target",
         spectrum_columns=["filename", "precursor", "scanNumber"],
-        score_columns=score_columns,
+        score_columns=scoring,
         peptide_column="precursor",
     )
 
