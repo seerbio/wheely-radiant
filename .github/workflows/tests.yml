@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, aws-master]
+    runs-on: [self-hosted, aws-master, X64]
     #    strategy:
     #      matrix:
     #        os: [ubuntu-latest, windows-latest, macos-latest]
