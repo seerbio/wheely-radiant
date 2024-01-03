@@ -19,7 +19,7 @@ from wheely_pythia.parsers import *
     ],
 )
 def test_read_pythia_features(spark_session, pythia_features, score_cols):
-    """Test that we parse crux files correctly"""
+    """Test that we parse DIA scoring feature (parquet) files correctly"""
 
     n = 256  # Expected PSM (row) count
 
@@ -36,6 +36,9 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
         "scanNumber",
     ]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
+    assert psms.protein_column is not None
+
+    assert all(col in psms.data.columns for col in psms.columns)
 
     assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
     np.testing.assert_array_equal(
@@ -64,7 +67,7 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
-    """Test that we parse crux files correctly"""
+    """Test that we parse legacy HDF (DDA result) files correctly"""
     psms = read_pythia_features(pythia_hdf_features, spark_session)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == 1000
