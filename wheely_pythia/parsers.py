@@ -220,6 +220,8 @@ def read_pythia_parquet(
         spectrum_columns=["filename", "precursor", "scanNumber"],
         score_columns=scoring,
         peptide_column="precursor",
+        protein_column="proteinGroup",
+        protein_delim=";",
     )
 
 
