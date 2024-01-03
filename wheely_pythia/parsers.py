@@ -215,8 +215,8 @@ def read_pythia_parquet(
         spectrum_columns=[
             "filename",
             "peptideStringWithMods",
-            "scanNumber",
             "charge",
+            "scanNumber",
         ],
         score_columns=scoring,
         peptide_column="peptideStringWithMods",
