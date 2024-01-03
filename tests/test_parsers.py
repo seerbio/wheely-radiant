@@ -32,7 +32,8 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
     assert psms.data.count() == n
     assert list(psms.spectrum_columns) == [
         "filename",
-        "precursor",
+        "peptideStringWithMods",
+        "charge",
         "scanNumber",
     ]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
