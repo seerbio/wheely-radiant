@@ -164,16 +164,11 @@ def read_pythia_parquet(
 
     file_paths = [str(p) for p in _listify(location)]
 
-    psms_df = (
-        spark.read.parquet(*file_paths)
-        .withColumn("filename", _fns.input_file_name())
-        .withColumn(
-            "precursor",
-            _fns.concat(
-                _col("peptideStringWithMods"), _lit("+"), _col("charge")
-            ),
-        )
-        .withColumn("target", ~_col("isDecoy").astype("boolean"))
+    psms_df = spark.read.parquet(*file_paths).withColumns(
+        {
+            "filename": _fns.input_file_name(),
+            "target": ~_col("isDecoy").astype("boolean"),
+        }
     )
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
@@ -217,9 +212,14 @@ def read_pythia_parquet(
     return _PsmDataset(
         psms_df,
         target_column="target",
-        spectrum_columns=["filename", "precursor", "scanNumber"],
+        spectrum_columns=[
+            "filename",
+            "peptideStringWithMods",
+            "scanNumber",
+            "charge",
+        ],
         score_columns=scoring,
-        peptide_column="precursor",
+        peptide_column="peptideStringWithMods",
     )
 
 
