@@ -220,6 +220,8 @@ def read_pythia_parquet(
         ],
         score_columns=scoring,
         peptide_column="peptideStringWithMods",
+        protein_column="proteinGroup",
+        protein_delim=";",
     )
 
 
