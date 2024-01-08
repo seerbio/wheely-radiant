@@ -18,11 +18,37 @@ from pyspark.sql import Column as _Column, functions as _fns
 _logger = _logging.getLogger(__name__)
 
 
-def pythia_scores_default() -> _List[str]:
+def pythia_scores_default(*columns) -> _List[str]:
     """
     Returns
     -------
-    The default set of score columns from Pythia, excluding the output of its NN classifier.
+    The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
+    classifier.
+    """
+
+    if "discriminateScore" in columns:
+        return pythia_scores_default_v0(*columns)
+
+    # Fall through to here when no arguments are supplied, making v1.0+ the default.
+    return pythia_scores_default_v1(*columns)
+
+
+def pythia_scores_default_v1(*columns) -> _List[str]:
+    """
+    Returns
+    -------
+    The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
+    classifier.
+    """
+    raise NotImplementedError("TODO")
+
+
+def pythia_scores_default_v0(*columns) -> _List[str]:
+    """
+    Returns
+    -------
+    The default set of score columns from Pythia (before v1.0), excluding the output of its NN
+    classifier.
     """
     return [
         "discriminateScore",  # Moved to first, as this is the "primary" score
@@ -60,22 +86,68 @@ def pythia_scores_default() -> _List[str]:
     ]
 
 
-def pythia_score_classifier() -> str:
+def pythia_score_classifier(*columns) -> str:
     """
     Returns
     -------
     The name of Pythia's NN classifier score column.
     """
+
+    if "discriminateScore" in columns:
+        return pythia_score_classifier_v0(*columns)
+
+    # Fall through to here when no arguments are supplied, making v1.0+ the default.
+    return pythia_score_classifier_v1(*columns)
+
+
+def pythia_score_classifier_v1(*columns) -> str:
+    """
+    Returns
+    -------
+    The name of Pythia's NN classifier score column (v1.0 and later).
+    """
+    raise NotImplementedError("TODO")
+
+
+def pythia_score_classifier_v0(*columns) -> str:
+    """
+    Returns
+    -------
+    The name of Pythia's NN classifier score column (before v1.0).
+    """
     return "classifierScore"
 
 
-def pythia_scores_svm(n_vec_scores=12) -> _Dict[str, _Column]:
+def pythia_scores_svm(*columns) -> str:
     """
     Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA results.
 
-    Parameters
-    ----------
-    n_vec_scores The number of scores to decode from each vector-typed score column
+    Returns
+    -------
+    A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
+    """
+
+    if "discriminateScore" in columns:
+        return pythia_score_classifier_v0(*columns)
+
+    # Fall through to here when no arguments are supplied, making v1.0+ the default.
+    return pythia_score_classifier_v1(*columns)
+
+
+def pythia_scores_svm_v1(*columns) -> str:
+    """
+    Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA v1.0 and later results.
+
+    Returns
+    -------
+    A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
+    """
+    raise NotImplementedError("TODO")
+
+
+def pythia_scores_svm_v0(*columns) -> _Dict[str, _Column]:
+    """
+    Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA (before v1.0) results.
 
     Returns
     -------

@@ -26,7 +26,7 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
     psms = read_pythia_features(
         pythia_features,
         spark_session,
-        scoring=score_cols() if callable(score_cols) else score_cols,
+        scoring=score_cols,
     )
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n

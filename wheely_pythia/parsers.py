@@ -150,7 +150,8 @@ def read_pythia_parquet(
               str, it will be treated as the name of a registered scoring scheme (see
               `wheely_pythia.scoring`), or if no such scheme exists, the name of a single column.
               An error will occur if no matches are found in the scheme registry or in the specified
-              files. If a callable, it must accept no arguments and produce a suitable value.
+              files. If a callable, it must accept a set of column names as positional arguments and
+              return a suitable value.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -184,7 +185,7 @@ def read_pythia_parquet(
             scoring = [scoring]
 
     if callable(scoring):
-        scoring = scoring()
+        scoring = scoring(*psms_df.columns)
 
     _logger.debug("Got scoring scheme: %s", scoring)
 
