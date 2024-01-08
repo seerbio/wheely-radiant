@@ -165,14 +165,24 @@ def read_pythia_parquet(
 
     file_paths = [str(p) for p in _listify(location)]
 
-    psms_df = spark.read.parquet(*file_paths).withColumns(
-        {
-            "filename": _fns.input_file_name(),
-            "target": ~_col("isDecoy").astype("boolean"),
-        }
-    )
+    psms_df = spark.read.parquet(*file_paths)
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
+
+    addl_cols = {
+        "filename": _fns.input_file_name(),
+        "target": ~_col("isDecoy").astype("boolean"),
+    }
+
+    if "charge" not in psms_df.columns:
+        assert (
+            "ChargeNorm" in psms_df.columns
+        ), "Did not find PSM charge information for v1+ results!"
+        addl_cols["charge"] = _fns.col("ChargeNorm").astype(
+            "integer"
+        ) + _fns.lit(2)
+
+    psms_df = psms_df.withColumns(addl_cols)
 
     if scoring is None:
         scoring = "default"
