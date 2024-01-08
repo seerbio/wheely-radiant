@@ -171,7 +171,9 @@ def read_pythia_parquet(
 
     addl_cols = {
         "filename": _fns.input_file_name(),
-        "target": ~_col("isDecoy").astype("boolean"),
+        "target": ~_col(
+            "IsDecoy" if "IsDecoy" in psms_df.columns else "isDecoy"
+        ).astype("boolean"),
     }
 
     if "charge" not in psms_df.columns:
@@ -220,18 +222,35 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
+    if "discriminateScore" not in psms_df.columns:
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "PeptideStringWithMods",
+                "charge",
+                "ScanNumber",
+            ],
+            peptide_column="PeptideStringWithMods",
+            protein_column="ProteinGroup",
+        )
+    else:
+        # Support legacy files with deprecated column names
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "peptideStringWithMods",
+                "charge",
+                "scanNumber",
+            ],
+            peptide_column="peptideStringWithMods",
+            protein_column="proteinGroup",
+        )
+
     return _PsmDataset(
         psms_df,
         target_column="target",
-        spectrum_columns=[
-            "filename",
-            "peptideStringWithMods",
-            "charge",
-            "scanNumber",
-        ],
         score_columns=scoring,
-        peptide_column="peptideStringWithMods",
-        protein_column="proteinGroup",
+        **col_semantics,
         protein_delim=";",
     )
 
