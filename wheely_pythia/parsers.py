@@ -150,7 +150,8 @@ def read_pythia_parquet(
               str, it will be treated as the name of a registered scoring scheme (see
               `wheely_pythia.scoring`), or if no such scheme exists, the name of a single column.
               An error will occur if no matches are found in the scheme registry or in the specified
-              files. If a callable, it must accept no arguments and produce a suitable value.
+              files. If a callable, it must accept a set of column names as positional arguments and
+              return a suitable value.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
@@ -164,14 +165,26 @@ def read_pythia_parquet(
 
     file_paths = [str(p) for p in _listify(location)]
 
-    psms_df = spark.read.parquet(*file_paths).withColumns(
-        {
-            "filename": _fns.input_file_name(),
-            "target": ~_col("isDecoy").astype("boolean"),
-        }
-    )
+    psms_df = spark.read.parquet(*file_paths)
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
+
+    addl_cols = {
+        "filename": _fns.input_file_name(),
+        "target": ~_col(
+            "IsDecoy" if "IsDecoy" in psms_df.columns else "isDecoy"
+        ).astype("boolean"),
+    }
+
+    if "charge" not in psms_df.columns:
+        assert (
+            "ChargeNorm" in psms_df.columns
+        ), "Did not find PSM charge information for v1+ results!"
+        addl_cols["charge"] = _fns.col("ChargeNorm").astype(
+            "integer"
+        ) + _fns.lit(2)
+
+    psms_df = psms_df.withColumns(addl_cols)
 
     if scoring is None:
         scoring = "default"
@@ -184,7 +197,7 @@ def read_pythia_parquet(
             scoring = [scoring]
 
     if callable(scoring):
-        scoring = scoring()
+        scoring = scoring(*psms_df.columns)
 
     _logger.debug("Got scoring scheme: %s", scoring)
 
@@ -209,18 +222,35 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
+    if "discriminateScore" not in psms_df.columns:
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "PeptideStringWithMods",
+                "charge",
+                "ScanNumber",
+            ],
+            peptide_column="PeptideStringWithMods",
+            protein_column="ProteinGroup",
+        )
+    else:
+        # Support legacy files with deprecated column names
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "peptideStringWithMods",
+                "charge",
+                "scanNumber",
+            ],
+            peptide_column="peptideStringWithMods",
+            protein_column="proteinGroup",
+        )
+
     return _PsmDataset(
         psms_df,
         target_column="target",
-        spectrum_columns=[
-            "filename",
-            "peptideStringWithMods",
-            "charge",
-            "scanNumber",
-        ],
         score_columns=scoring,
-        peptide_column="peptideStringWithMods",
-        protein_column="proteinGroup",
+        **col_semantics,
         protein_delim=";",
     )
 

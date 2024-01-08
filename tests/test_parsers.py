@@ -26,24 +26,24 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
     psms = read_pythia_features(
         pythia_features,
         spark_session,
-        scoring=score_cols() if callable(score_cols) else score_cols,
+        scoring=score_cols,
     )
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n
-    assert list(psms.spectrum_columns) == [
-        "filename",
-        "peptideStringWithMods",
-        "charge",
-        "scanNumber",
-    ]
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
     assert psms.protein_column is not None
 
-    assert all(col in psms.data.columns for col in psms.columns)
+    assert not [col for col in psms.columns if col not in psms.data.columns]
 
-    assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
+    assert any(
+        c in psms.data.columns for c in ["isDecoy", "IsDecoy"]
+    ), "Could not find decoy col"
     np.testing.assert_array_equal(
-        psms.data.select("isDecoy").toPandas().values,
+        psms.data.select(
+            "IsDecoy" if "IsDecoy" in psms.data.columns else "isDecoy"
+        )
+        .toPandas()
+        .values,
         psms.data.select(~psms.targets).toPandas().values,
     )
 
