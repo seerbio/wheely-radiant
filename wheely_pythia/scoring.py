@@ -40,7 +40,219 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
     The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
     classifier.
     """
-    raise NotImplementedError("TODO")
+    return [
+        "DiscriminantScore",  # Moved to first, as this is the "primary" score
+        "AllignedMaxIndexesCount",
+        "AltTargetKeyIdCosineSimSumCharge1_1",
+        "AltTargetKeyIdCosineSimSumCharge1_2",
+        "AltTargetKeyIdCosineSimSumCharge1_3",
+        "AltTargetKeyIdCosineSimSumCharge1_OG",
+        "AltTargetKeyIdCosineSimSumCharge2_1",
+        "AltTargetKeyIdCosineSimSumCharge2_2",
+        "AltTargetKeyIdCosineSimSumCharge2_3",
+        "AltTargetKeyIdCosineSimSumCharge2_OG",
+        "AltTargetKeyIdCosineSimSumCharge3_1",
+        "AltTargetKeyIdCosineSimSumCharge3_2",
+        "AltTargetKeyIdCosineSimSumCharge3_3",
+        "AltTargetKeyIdCosineSimSumCharge3_OG",
+        "AltTargetKeyIdCosineSimSumCharge4_1",
+        "AltTargetKeyIdCosineSimSumCharge4_2",
+        "AltTargetKeyIdCosineSimSumCharge4_3",
+        "AltTargetKeyIdCosineSimSumCharge4_OG",
+        "AminoAcidCountA",
+        "AminoAcidCountC",
+        "AminoAcidCountD",
+        "AminoAcidCountE",
+        "AminoAcidCountF",
+        "AminoAcidCountG",
+        "AminoAcidCountH",
+        "AminoAcidCountI",
+        "AminoAcidCountK",
+        "AminoAcidCountL",
+        "AminoAcidCountM",
+        "AminoAcidCountN",
+        "AminoAcidCountP",
+        "AminoAcidCountQ",
+        "AminoAcidCountR",
+        "AminoAcidCountS",
+        "AminoAcidCountT",
+        "AminoAcidCountV",
+        "AminoAcidCountW",
+        "AminoAcidCountY",
+        "ChargeNorm",
+        # 'ClassifierScore',                 # From classifier
+        "ColumnApexIndexRatiosToAnchor1",
+        "ColumnApexIndexRatiosToAnchor10",
+        "ColumnApexIndexRatiosToAnchor11",
+        "ColumnApexIndexRatiosToAnchor12",
+        "ColumnApexIndexRatiosToAnchor2",
+        "ColumnApexIndexRatiosToAnchor3",
+        "ColumnApexIndexRatiosToAnchor4",
+        "ColumnApexIndexRatiosToAnchor5",
+        "ColumnApexIndexRatiosToAnchor6",
+        "ColumnApexIndexRatiosToAnchor7",
+        "ColumnApexIndexRatiosToAnchor8",
+        "ColumnApexIndexRatiosToAnchor9",
+        "CosineSim100MS1",
+        "CosineSim100MS1Iso1",
+        "CosineSim100MS1Iso2",
+        "CosineSim100MS1PreMono",
+        "CosineSim20MS1",
+        "CosineSim45MS1",
+        "CosineSimShadowsToAnchor1",
+        "CosineSimShadowsToAnchor10",
+        "CosineSimShadowsToAnchor11",
+        "CosineSimShadowsToAnchor12",
+        "CosineSimShadowsToAnchor2",
+        "CosineSimShadowsToAnchor3",
+        "CosineSimShadowsToAnchor4",
+        "CosineSimShadowsToAnchor5",
+        "CosineSimShadowsToAnchor6",
+        "CosineSimShadowsToAnchor7",
+        "CosineSimShadowsToAnchor8",
+        "CosineSimShadowsToAnchor9",
+        "CosineSimSpectrum",
+        "CosineSimSpectrumCubed",
+        "CosineSimSum100",
+        "CosineSimSum20",
+        "CosineSimSum45",
+        "CosineSimSumBottom6",
+        "CosineSimSumTop6",
+        "CosineSimToAnchor1",
+        "CosineSimToAnchor10",
+        "CosineSimToAnchor11",
+        "CosineSimToAnchor12",
+        "CosineSimToAnchor2",
+        "CosineSimToAnchor3",
+        "CosineSimToAnchor4",
+        "CosineSimToAnchor5",
+        "CosineSimToAnchor6",
+        "CosineSimToAnchor7",
+        "CosineSimToAnchor8",
+        "CosineSimToAnchor9",
+        # 'DecoyRatio',           # From classifier
+        "IRTPredicted",
+        "IntensityFoundMax1",
+        "IntensityFoundMax10",
+        "IntensityFoundMax11",
+        "IntensityFoundMax12",
+        "IntensityFoundMax2",
+        "IntensityFoundMax3",
+        "IntensityFoundMax4",
+        "IntensityFoundMax5",
+        "IntensityFoundMax6",
+        "IntensityFoundMax7",
+        "IntensityFoundMax8",
+        "IntensityFoundMax9",
+        "KlDivSpectrum",
+        "KlDivSpectrumCubeRoot",
+        "Mass",
+        "MzAccuracy1",
+        "MzAccuracy10",
+        "MzAccuracy11",
+        "MzAccuracy12",
+        "MzAccuracy2",
+        "MzAccuracy3",
+        "MzAccuracy4",
+        "MzAccuracy5",
+        "MzAccuracy6",
+        "MzAccuracy7",
+        "MzAccuracy8",
+        "MzAccuracy9",
+        "MzFoundMean1",
+        "MzFoundMean10",
+        "MzFoundMean11",
+        "MzFoundMean12",
+        "MzFoundMean2",
+        "MzFoundMean3",
+        "MzFoundMean4",
+        "MzFoundMean5",
+        "MzFoundMean6",
+        "MzFoundMean7",
+        "MzFoundMean8",
+        "MzFoundMean9",
+        "MzFoundStDev1",
+        "MzFoundStDev10",
+        "MzFoundStDev11",
+        "MzFoundStDev12",
+        "MzFoundStDev2",
+        "MzFoundStDev3",
+        "MzFoundStDev4",
+        "MzFoundStDev5",
+        "MzFoundStDev6",
+        "MzFoundStDev7",
+        "MzFoundStDev8",
+        "MzFoundStDev9",
+        "MzNorm",
+        "MzPeakLengthsNorm1",
+        "MzPeakLengthsNorm10",
+        "MzPeakLengthsNorm11",
+        "MzPeakLengthsNorm12",
+        "MzPeakLengthsNorm2",
+        "MzPeakLengthsNorm3",
+        "MzPeakLengthsNorm4",
+        "MzPeakLengthsNorm5",
+        "MzPeakLengthsNorm6",
+        "MzPeakLengthsNorm7",
+        "MzPeakLengthsNorm8",
+        "MzPeakLengthsNorm9",
+        "MzSearched1",
+        "MzSearched10",
+        "MzSearched11",
+        "MzSearched12",
+        "MzSearched2",
+        "MzSearched3",
+        "MzSearched4",
+        "MzSearched5",
+        "MzSearched6",
+        "MzSearched7",
+        "MzSearched8",
+        "MzSearched9",
+        "PeakShapeRatio1",
+        "PeakShapeRatio2",
+        "PeakShapeRatio3",
+        "PeptideLengthNorm",
+        # 'PeptideStringWithMods',
+        # 'ProteinGroup',
+        # 'QValue',              # From classifier
+        "ScanIonCount",
+        #'ScanNumber',
+        "ScanTime",
+        "ScanTimeDelta",
+        "ScanTimePd",
+        "ScanTimePredicted",
+        "ScanTimeRange",
+        "ShadowsCosineSimSum",
+        "ShadowsIntensityRatio1",
+        "ShadowsIntensityRatio10",
+        "ShadowsIntensityRatio11",
+        "ShadowsIntensityRatio12",
+        "ShadowsIntensityRatio2",
+        "ShadowsIntensityRatio3",
+        "ShadowsIntensityRatio4",
+        "ShadowsIntensityRatio5",
+        "ShadowsIntensityRatio6",
+        "ShadowsIntensityRatio7",
+        "ShadowsIntensityRatio8",
+        "ShadowsIntensityRatio9",
+        # 'TargetKey',
+        "TheoFragmentCount",
+        "TheoIntensity1",
+        "TheoIntensity10",
+        "TheoIntensity11",
+        "TheoIntensity12",
+        "TheoIntensity2",
+        "TheoIntensity3",
+        "TheoIntensity4",
+        "TheoIntensity5",
+        "TheoIntensity6",
+        "TheoIntensity7",
+        "TheoIntensity8",
+        "TheoIntensity9",
+        "TopBottomRatio",
+        "TopBottomRatioNorm",
+        "TotalIntensityLog",
+    ]
 
 
 def pythia_scores_default_v0(*columns) -> _List[str]:
@@ -106,7 +318,7 @@ def pythia_score_classifier_v1(*columns) -> str:
     -------
     The name of Pythia's NN classifier score column (v1.0 and later).
     """
-    raise NotImplementedError("TODO")
+    return "ClassifierScore"
 
 
 def pythia_score_classifier_v0(*columns) -> str:
@@ -118,7 +330,7 @@ def pythia_score_classifier_v0(*columns) -> str:
     return "classifierScore"
 
 
-def pythia_scores_svm(*columns) -> str:
+def pythia_scores_svm(*columns) -> _Dict[str, _Column]:
     """
     Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA results.
 
@@ -128,13 +340,13 @@ def pythia_scores_svm(*columns) -> str:
     """
 
     if "discriminateScore" in columns:
-        return pythia_score_classifier_v0(*columns)
+        return pythia_scores_svm_v0(*columns)
 
     # Fall through to here when no arguments are supplied, making v1.0+ the default.
-    return pythia_score_classifier_v1(*columns)
+    return pythia_scores_svm_v1(*columns)
 
 
-def pythia_scores_svm_v1(*columns) -> str:
+def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
     """
     Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA v1.0 and later results.
 
@@ -142,7 +354,284 @@ def pythia_scores_svm_v1(*columns) -> str:
     -------
     A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
     """
-    raise NotImplementedError("TODO")
+    # Take a list of all known scores; comment out those that aren't directly usable
+    pythia_scores = [
+        "DiscriminantScore",  # Moved to first, as this is the "primary" score
+        "AllignedMaxIndexesCount",
+        "AltTargetKeyIdCosineSimSumCharge1_1",
+        "AltTargetKeyIdCosineSimSumCharge1_2",
+        "AltTargetKeyIdCosineSimSumCharge1_3",
+        "AltTargetKeyIdCosineSimSumCharge1_OG",
+        "AltTargetKeyIdCosineSimSumCharge2_1",
+        "AltTargetKeyIdCosineSimSumCharge2_2",
+        "AltTargetKeyIdCosineSimSumCharge2_3",
+        "AltTargetKeyIdCosineSimSumCharge2_OG",
+        "AltTargetKeyIdCosineSimSumCharge3_1",
+        "AltTargetKeyIdCosineSimSumCharge3_2",
+        "AltTargetKeyIdCosineSimSumCharge3_3",
+        "AltTargetKeyIdCosineSimSumCharge3_OG",
+        "AltTargetKeyIdCosineSimSumCharge4_1",
+        "AltTargetKeyIdCosineSimSumCharge4_2",
+        "AltTargetKeyIdCosineSimSumCharge4_3",
+        "AltTargetKeyIdCosineSimSumCharge4_OG",
+        "AminoAcidCountA",
+        "AminoAcidCountC",
+        "AminoAcidCountD",
+        "AminoAcidCountE",
+        "AminoAcidCountF",
+        "AminoAcidCountG",
+        "AminoAcidCountH",
+        "AminoAcidCountI",
+        "AminoAcidCountK",
+        "AminoAcidCountL",
+        "AminoAcidCountM",
+        "AminoAcidCountN",
+        "AminoAcidCountP",
+        "AminoAcidCountQ",
+        "AminoAcidCountR",
+        "AminoAcidCountS",
+        "AminoAcidCountT",
+        "AminoAcidCountV",
+        "AminoAcidCountW",
+        "AminoAcidCountY",
+        # 'ChargeNorm',                      # Reencoded below
+        # 'ClassifierScore',                 # From classifier
+        "ColumnApexIndexRatiosToAnchor1",
+        "ColumnApexIndexRatiosToAnchor10",
+        "ColumnApexIndexRatiosToAnchor11",
+        "ColumnApexIndexRatiosToAnchor12",
+        "ColumnApexIndexRatiosToAnchor2",
+        "ColumnApexIndexRatiosToAnchor3",
+        "ColumnApexIndexRatiosToAnchor4",
+        "ColumnApexIndexRatiosToAnchor5",
+        "ColumnApexIndexRatiosToAnchor6",
+        "ColumnApexIndexRatiosToAnchor7",
+        "ColumnApexIndexRatiosToAnchor8",
+        "ColumnApexIndexRatiosToAnchor9",
+        "CosineSim100MS1",
+        "CosineSim100MS1Iso1",
+        "CosineSim100MS1Iso2",
+        "CosineSim100MS1PreMono",
+        "CosineSim20MS1",
+        "CosineSim45MS1",
+        "CosineSimShadowsToAnchor1",
+        "CosineSimShadowsToAnchor10",
+        "CosineSimShadowsToAnchor11",
+        "CosineSimShadowsToAnchor12",
+        "CosineSimShadowsToAnchor2",
+        "CosineSimShadowsToAnchor3",
+        "CosineSimShadowsToAnchor4",
+        "CosineSimShadowsToAnchor5",
+        "CosineSimShadowsToAnchor6",
+        "CosineSimShadowsToAnchor7",
+        "CosineSimShadowsToAnchor8",
+        "CosineSimShadowsToAnchor9",
+        "CosineSimSpectrum",
+        "CosineSimSpectrumCubed",
+        "CosineSimSum100",
+        "CosineSimSum20",
+        "CosineSimSum45",
+        "CosineSimSumBottom6",
+        "CosineSimSumTop6",
+        "CosineSimToAnchor1",
+        "CosineSimToAnchor10",
+        "CosineSimToAnchor11",
+        "CosineSimToAnchor12",
+        "CosineSimToAnchor2",
+        "CosineSimToAnchor3",
+        "CosineSimToAnchor4",
+        "CosineSimToAnchor5",
+        "CosineSimToAnchor6",
+        "CosineSimToAnchor7",
+        "CosineSimToAnchor8",
+        "CosineSimToAnchor9",
+        # 'DecoyRatio',           # From classifier
+        "IRTPredicted",  # Keep this as a peptide correction factor
+        # 'IntensityFoundMax1',   # All reencoded below
+        # 'IntensityFoundMax10',
+        # 'IntensityFoundMax11',
+        # 'IntensityFoundMax12',
+        # 'IntensityFoundMax2',
+        # 'IntensityFoundMax3',
+        # 'IntensityFoundMax4',
+        # 'IntensityFoundMax5',
+        # 'IntensityFoundMax6',
+        # 'IntensityFoundMax7',
+        # 'IntensityFoundMax8',
+        # 'IntensityFoundMax9',
+        # 'IsDecoy',
+        "KlDivSpectrum",
+        "KlDivSpectrumCubeRoot",
+        "Mass",  # Keep this as a peptide correction factor
+        "MzAccuracy1",
+        "MzAccuracy10",
+        "MzAccuracy11",
+        "MzAccuracy12",
+        "MzAccuracy2",
+        "MzAccuracy3",
+        "MzAccuracy4",
+        "MzAccuracy5",
+        "MzAccuracy6",
+        "MzAccuracy7",
+        "MzAccuracy8",
+        "MzAccuracy9",
+        # 'MzFoundMean1',        # All reencoded below
+        # 'MzFoundMean10',
+        # 'MzFoundMean11',
+        # 'MzFoundMean12',
+        # 'MzFoundMean2',
+        # 'MzFoundMean3',
+        # 'MzFoundMean4',
+        # 'MzFoundMean5',
+        # 'MzFoundMean6',
+        # 'MzFoundMean7',
+        # 'MzFoundMean8',
+        # 'MzFoundMean9',
+        "MzFoundStDev1",
+        "MzFoundStDev10",
+        "MzFoundStDev11",
+        "MzFoundStDev12",
+        "MzFoundStDev2",
+        "MzFoundStDev3",
+        "MzFoundStDev4",
+        "MzFoundStDev5",
+        "MzFoundStDev6",
+        "MzFoundStDev7",
+        "MzFoundStDev8",
+        "MzFoundStDev9",
+        "MzNorm",  # Keep this as a peptide correction factor
+        "MzPeakLengthsNorm1",
+        "MzPeakLengthsNorm10",
+        "MzPeakLengthsNorm11",
+        "MzPeakLengthsNorm12",
+        "MzPeakLengthsNorm2",
+        "MzPeakLengthsNorm3",
+        "MzPeakLengthsNorm4",
+        "MzPeakLengthsNorm5",
+        "MzPeakLengthsNorm6",
+        "MzPeakLengthsNorm7",
+        "MzPeakLengthsNorm8",
+        "MzPeakLengthsNorm9",
+        # 'MzSearched1',         # All reencoded below
+        # 'MzSearched10',
+        # 'MzSearched11',
+        # 'MzSearched12',
+        # 'MzSearched2',
+        # 'MzSearched3',
+        # 'MzSearched4',
+        # 'MzSearched5',
+        # 'MzSearched6',
+        # 'MzSearched7',
+        # 'MzSearched8',
+        # 'MzSearched9',
+        "PeakShapeRatio1",
+        "PeakShapeRatio2",
+        "PeakShapeRatio3",
+        "PeptideLengthNorm",  # Keep this as a peptide correction factor
+        # 'PeptideStringWithMods',
+        # 'ProteinGroup',
+        # 'QValue',              # From classifier
+        "ScanIonCount",
+        # 'ScanNumber',
+        # 'ScanTime',
+        # 'ScanTimeDelta',       # Reencoded below
+        "ScanTimePd",
+        # 'ScanTimePredicted',
+        "ScanTimeRange",
+        "ShadowsCosineSimSum",
+        "ShadowsIntensityRatio1",
+        "ShadowsIntensityRatio10",
+        "ShadowsIntensityRatio11",
+        "ShadowsIntensityRatio12",
+        "ShadowsIntensityRatio2",
+        "ShadowsIntensityRatio3",
+        "ShadowsIntensityRatio4",
+        "ShadowsIntensityRatio5",
+        "ShadowsIntensityRatio6",
+        "ShadowsIntensityRatio7",
+        "ShadowsIntensityRatio8",
+        "ShadowsIntensityRatio9",
+        # 'TargetKey',
+        "TheoFragmentCount",
+        # 'TheoIntensity1',          # All reencoded below
+        # 'TheoIntensity10',
+        # 'TheoIntensity11',
+        # 'TheoIntensity12',
+        # 'TheoIntensity2',
+        # 'TheoIntensity3',
+        # 'TheoIntensity4',
+        # 'TheoIntensity5',
+        # 'TheoIntensity6',
+        # 'TheoIntensity7',
+        # 'TheoIntensity8',
+        # 'TheoIntensity9',
+        "TopBottomRatio",
+        "TopBottomRatioNorm",
+        "TotalIntensityLog",
+    ]
+
+    # Now we construct additional scores from some
+    # columns that we don't use directly
+
+    addl_scores = {
+        "absDeltaScanTime": _fns.abs(_fns.col("ScanTimeDelta")),
+        # 1-hot encoding for charge
+        **{
+            f"charge{i}": _fns.when(
+                _fns.col("charge") == i, _fns.lit(1.0)
+            ).otherwise(0.0)
+            for i in [1, 2, 3, 4]
+        },
+    }
+
+    # Unconditionally use 12 scores from each array; this
+    # will not work if the user chooses another setting.
+    n_vec_scores = 12
+
+    # Convert frag m/z information into individual mass deltas
+    _max_mz_delta = 0.05
+    for i in range(n_vec_scores):
+        idx = i + 1
+
+        _foundmz = _fns.col(f"MzFoundMean{idx}")
+        _theomz = _fns.col(f"MzSearched{idx}")
+
+        addl_scores[f"absDeltaMz_{i}"] = _fns.when(
+            # Handle peaks that weren't found
+            (_foundmz == 0.0) | _fns.isnull(_foundmz),
+            _fns.lit(_max_mz_delta),
+        ).otherwise(
+            _fns.least(_fns.abs(_foundmz - _theomz), _fns.lit(_max_mz_delta))
+        )
+
+    # Convert frag intensity information into individual absolute log ratios
+    _max_log_inten_ratio = 4.0
+    _foundints = [
+        _fns.col(f"IntensityFoundMax{i + 1}") for i in range(n_vec_scores)
+    ]
+    _foundint = _fns.array(*_foundints)
+    _totfoundint = _fns.aggregate(_foundint, _fns.lit(0.0), lambda a, b: a + b)
+    _theoints = [
+        _fns.col(f"TheoIntensity{i + 1}") for i in range(n_vec_scores)
+    ]
+    _theoint = _fns.array(*_theoints)
+    _tottheoint = _fns.aggregate(_theoint, _fns.lit(0.0), lambda a, b: a + b)
+    for i in range(n_vec_scores):
+        addl_scores[f"absLogNormIntenRatio_{i}"] = _fns.least(
+            _fns.lit(10.0),
+            _fns.abs(
+                _fns.log(
+                    10.0,
+                    (_foundint.getItem(i) / _totfoundint)
+                    / (_theoint.getItem(i) / _tottheoint),
+                )
+            ),
+        )
+
+    return {
+        **{c: _fns.col(c) for c in pythia_scores},
+        **addl_scores,
+    }
 
 
 def pythia_scores_svm_v0(*columns) -> _Dict[str, _Column]:
@@ -216,6 +705,10 @@ def pythia_scores_svm_v0(*columns) -> _Dict[str, _Column]:
             for i in [1, 2, 3, 4]
         },
     }
+
+    # Unconditionally use 12 scores from each array; this
+    # will not work if the user chooses another setting.
+    n_vec_scores = 12
 
     # Now add the various scores that must be parsed from arrays;
     # dict value is default value
