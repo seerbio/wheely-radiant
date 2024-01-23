@@ -79,6 +79,12 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "AminoAcidCountV",
         "AminoAcidCountW",
         "AminoAcidCountY",
+        "AminoAcidCountB",
+        "AminoAcidCountJ",
+        "AminoAcidCountO",
+        "AminoAcidCountU",
+        "AminoAcidCountX",
+        "AminoAcidCountZ",
         "ChargeNorm",
         # 'ClassifierScore',                 # From classifier
         "ColumnApexIndexRatiosToAnchor1",
@@ -394,6 +400,12 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "AminoAcidCountV",
         "AminoAcidCountW",
         "AminoAcidCountY",
+        "AminoAcidCountB",
+        "AminoAcidCountJ",
+        "AminoAcidCountO",
+        "AminoAcidCountU",
+        "AminoAcidCountX",
+        "AminoAcidCountZ",
         # 'ChargeNorm',                      # Reencoded below
         # 'ClassifierScore',                 # From classifier
         "ColumnApexIndexRatiosToAnchor1",
