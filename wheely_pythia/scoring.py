@@ -1,6 +1,7 @@
 """
 `wheely_pythia.scoring` -- different scoring schemes for use with PythiaDIA
 """
+
 import logging as _logging
 import struct as _struct
 from typing import (
@@ -40,7 +41,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
     The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
     classifier.
     """
-    return [
+    pythia_scores = [
         "DiscriminantScore",  # Moved to first, as this is the "primary" score
         "AllignedMaxIndexesCount",
         "AltTargetKeyIdCosineSimSumCharge1_1",
@@ -79,6 +80,12 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "AminoAcidCountV",
         "AminoAcidCountW",
         "AminoAcidCountY",
+        "AminoAcidCountB",
+        "AminoAcidCountJ",
+        "AminoAcidCountO",
+        "AminoAcidCountU",
+        "AminoAcidCountX",
+        "AminoAcidCountZ",
         "ChargeNorm",
         # 'ClassifierScore',                 # From classifier
         "ColumnApexIndexRatiosToAnchor1",
@@ -252,7 +259,51 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "TopBottomRatio",
         "TopBottomRatioNorm",
         "TotalIntensityLog",
+        "AltTargetKeyIdCosineSimSumCharge1_OG",
+        "AltTargetKeyIdCosineSimSumCharge1_1",
+        "AltTargetKeyIdCosineSimSumCharge1_2",
+        "AltTargetKeyIdCosineSimSumCharge1_3",
+        "AltTargetKeyIdCosineSimSumCharge2_OG",
+        "AltTargetKeyIdCosineSimSumCharge2_1",
+        "AltTargetKeyIdCosineSimSumCharge2_2",
+        "AltTargetKeyIdCosineSimSumCharge2_3",
+        "AltTargetKeyIdCosineSimSumCharge3_OG",
+        "AltTargetKeyIdCosineSimSumCharge3_1",
+        "AltTargetKeyIdCosineSimSumCharge3_2",
+        "AltTargetKeyIdCosineSimSumCharge3_3",
+        "AltTargetKeyIdCosineSimSumCharge4_OG",
+        "AltTargetKeyIdCosineSimSumCharge4_1",
+        "AltTargetKeyIdCosineSimSumCharge4_2",
+        "AltTargetKeyIdCosineSimSumCharge4_3",
+        "AltTargetKeyIdTimeDeltaCharge1_1",
+        "AltTargetKeyIdTimeDeltaCharge1_2",
+        "AltTargetKeyIdTimeDeltaCharge1_3",
+        "AltTargetKeyIdTimeDeltaCharge2_1",
+        "AltTargetKeyIdTimeDeltaCharge2_2",
+        "AltTargetKeyIdTimeDeltaCharge2_3",
+        "AltTargetKeyIdTimeDeltaCharge3_1",
+        "AltTargetKeyIdTimeDeltaCharge3_2",
+        "AltTargetKeyIdTimeDeltaCharge3_3",
+        "AltTargetKeyIdTimeDeltaCharge4_1",
+        "AltTargetKeyIdTimeDeltaCharge4_2",
+        "AltTargetKeyIdTimeDeltaCharge4_3",
     ]
+
+    _missing = set(pythia_scores) - set(columns)
+    if len(_missing) == len(pythia_scores):
+        raise ValueError(
+            f"Could not find any of the columns {pythia_scores} in {columns}"
+        )
+    elif len(_missing) > 0:
+        _logger.warning(
+            "The following scores are missing and will be ignored: %s",
+            _missing,
+        )
+
+    # Preserve ordering of scores
+    pythia_scores = [c for c in pythia_scores if c in columns]
+
+    return pythia_scores
 
 
 def pythia_scores_default_v0(*columns) -> _List[str]:
@@ -394,6 +445,12 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "AminoAcidCountV",
         "AminoAcidCountW",
         "AminoAcidCountY",
+        "AminoAcidCountB",
+        "AminoAcidCountJ",
+        "AminoAcidCountO",
+        "AminoAcidCountU",
+        "AminoAcidCountX",
+        "AminoAcidCountZ",
         # 'ChargeNorm',                      # Reencoded below
         # 'ClassifierScore',                 # From classifier
         "ColumnApexIndexRatiosToAnchor1",
@@ -568,7 +625,49 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "TopBottomRatio",
         "TopBottomRatioNorm",
         "TotalIntensityLog",
+        "AltTargetKeyIdCosineSimSumCharge1_OG",
+        "AltTargetKeyIdCosineSimSumCharge1_1",
+        "AltTargetKeyIdCosineSimSumCharge1_2",
+        "AltTargetKeyIdCosineSimSumCharge1_3",
+        "AltTargetKeyIdCosineSimSumCharge2_OG",
+        "AltTargetKeyIdCosineSimSumCharge2_1",
+        "AltTargetKeyIdCosineSimSumCharge2_2",
+        "AltTargetKeyIdCosineSimSumCharge2_3",
+        "AltTargetKeyIdCosineSimSumCharge3_OG",
+        "AltTargetKeyIdCosineSimSumCharge3_1",
+        "AltTargetKeyIdCosineSimSumCharge3_2",
+        "AltTargetKeyIdCosineSimSumCharge3_3",
+        "AltTargetKeyIdCosineSimSumCharge4_OG",
+        "AltTargetKeyIdCosineSimSumCharge4_1",
+        "AltTargetKeyIdCosineSimSumCharge4_2",
+        "AltTargetKeyIdCosineSimSumCharge4_3",
+        "AltTargetKeyIdTimeDeltaCharge1_1",
+        "AltTargetKeyIdTimeDeltaCharge1_2",
+        "AltTargetKeyIdTimeDeltaCharge1_3",
+        "AltTargetKeyIdTimeDeltaCharge2_1",
+        "AltTargetKeyIdTimeDeltaCharge2_2",
+        "AltTargetKeyIdTimeDeltaCharge2_3",
+        "AltTargetKeyIdTimeDeltaCharge3_1",
+        "AltTargetKeyIdTimeDeltaCharge3_2",
+        "AltTargetKeyIdTimeDeltaCharge3_3",
+        "AltTargetKeyIdTimeDeltaCharge4_1",
+        "AltTargetKeyIdTimeDeltaCharge4_2",
+        "AltTargetKeyIdTimeDeltaCharge4_3",
     ]
+
+    _missing = set(pythia_scores) - set(columns)
+    if len(_missing) == len(pythia_scores):
+        raise ValueError(
+            f"Could not find any of the columns {pythia_scores} in {columns}"
+        )
+    elif len(_missing) > 0:
+        _logger.warning(
+            "The following scores are missing and will be ignored: %s",
+            _missing,
+        )
+
+    # Preserve ordering of scores
+    pythia_scores = [c for c in pythia_scores if c in columns]
 
     # Now we construct additional scores from some
     # columns that we don't use directly
