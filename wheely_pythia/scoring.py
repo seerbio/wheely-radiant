@@ -1,6 +1,7 @@
 """
 `wheely_pythia.scoring` -- different scoring schemes for use with PythiaDIA
 """
+
 import logging as _logging
 import struct as _struct
 from typing import (

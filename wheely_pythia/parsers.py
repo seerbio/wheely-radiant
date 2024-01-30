@@ -1,6 +1,7 @@
 """
 `parsers`: module for Pythia results parsing functions
 """
+
 import logging as _logging
 from typing import (
     Callable as _Callable,

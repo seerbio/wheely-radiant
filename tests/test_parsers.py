@@ -1,4 +1,5 @@
 """Tests for parsing implementations"""
+
 import logging
 
 import numpy as np
