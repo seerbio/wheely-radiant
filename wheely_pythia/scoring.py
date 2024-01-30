@@ -40,7 +40,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
     The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
     classifier.
     """
-    return [
+    pythia_scores = [
         "DiscriminantScore",  # Moved to first, as this is the "primary" score
         "AllignedMaxIndexesCount",
         "AltTargetKeyIdCosineSimSumCharge1_1",
@@ -285,8 +285,24 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "AltTargetKeyIdTimeDeltaCharge3_3",
         "AltTargetKeyIdTimeDeltaCharge4_1",
         "AltTargetKeyIdTimeDeltaCharge4_2",
-        "AltTargetKeyIdTimeDeltaCharge4_3"
+        "AltTargetKeyIdTimeDeltaCharge4_3",
     ]
+
+    _missing = set(pythia_scores) - set(columns)
+    if len(_missing) == len(pythia_scores):
+        raise ValueError(
+            f"Could not find any of the columns {pythia_scores} in {columns}"
+        )
+    elif len(_missing) > 0:
+        _logger.warning(
+            "The following scores are missing and will be ignored: %s",
+            _missing,
+        )
+
+    # Preserve ordering of scores
+    pythia_scores = [c for c in pythia_scores if c in columns]
+
+    return pythia_scores
 
 
 def pythia_scores_default_v0(*columns) -> _List[str]:
@@ -635,8 +651,22 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "AltTargetKeyIdTimeDeltaCharge3_3",
         "AltTargetKeyIdTimeDeltaCharge4_1",
         "AltTargetKeyIdTimeDeltaCharge4_2",
-        "AltTargetKeyIdTimeDeltaCharge4_3"
+        "AltTargetKeyIdTimeDeltaCharge4_3",
     ]
+
+    _missing = set(pythia_scores) - set(columns)
+    if len(_missing) == len(pythia_scores):
+        raise ValueError(
+            f"Could not find any of the columns {pythia_scores} in {columns}"
+        )
+    elif len(_missing) > 0:
+        _logger.warning(
+            "The following scores are missing and will be ignored: %s",
+            _missing,
+        )
+
+    # Preserve ordering of scores
+    pythia_scores = [c for c in pythia_scores if c in columns]
 
     # Now we construct additional scores from some
     # columns that we don't use directly
