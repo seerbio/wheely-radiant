@@ -35,6 +35,7 @@ def spark_session(request):
     params=[
         "data/1.mzML.subset.prq.pythiaDIA",
         "data/1.mzML.subset.v1.prq.pythiaDIA",
+        "data/1.mzML.subset.v1_1.prqFF.pythiaDIA",
     ]
 )
 def pythia_features(request):
