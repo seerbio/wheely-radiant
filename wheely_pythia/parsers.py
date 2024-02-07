@@ -3,6 +3,7 @@
 """
 
 import logging as _logging
+import struct as _struct
 from typing import (
     Callable as _Callable,
     Dict as _Dict,
@@ -174,22 +175,34 @@ def read_pythia_parquet(
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
-    _n_peaks = 12  # TODO
-
     addl_cols = {
         "filename": _fns.input_file_name(),
         "target": ~_col(
             "IsDecoy" if "IsDecoy" in psms_df.columns else "isDecoy"
         ).astype("boolean"),
-        "peaklist": _lists_to_peaklist(
+    }
+
+    if "mzFoundMeanVec" in psms_df.columns:
+        # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
+        _to_double_array = _fns.udf(
+            lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
+            returnType="Array<double>",
+        )
+
+        addl_cols["peaklist"] = _lists_to_peaklist(
+            _to_double_array("mzFoundMeanVec"),
+            _to_double_array("intensityFoundMaxVec"),
+        )
+    else:
+        _n_peaks = 12  # TODO
+        addl_cols["peaklist"] = _lists_to_peaklist(
             _fns.array(*[f"MzFoundMean{i+1}" for i in range(_n_peaks)]).alias(
                 "MzFoundMeanVec"
             ),
             _fns.array(
                 *[f"IntensityFoundMax{i + 1}" for i in range(_n_peaks)]
             ).alias("IntensityFoundMaxVec"),
-        ),
-    }
+        )
 
     if "charge" not in psms_df.columns:
         assert (
@@ -198,6 +211,10 @@ def read_pythia_parquet(
         addl_cols["charge"] = _fns.col("ChargeNorm").astype(
             "integer"
         ) + _fns.lit(2)
+
+    addl_cols["mz"] = (
+        _col("Mass") + _fns.lit(1.007276) * _col("charge")
+    ) / _col("charge")
 
     psms_df = psms_df.withColumns(addl_cols)
 
@@ -245,6 +262,7 @@ def read_pythia_parquet(
                 "charge",
                 "ScanNumber",
             ],
+            rt_column="ScanTime",
             peptide_column="PeptideStringWithMods",
             protein_column="ProteinGroup",
         )
@@ -257,6 +275,7 @@ def read_pythia_parquet(
                 "charge",
                 "scanNumber",
             ],
+            rt_column="scanTime",
             peptide_column="peptideStringWithMods",
             protein_column="proteinGroup",
         )
@@ -267,8 +286,7 @@ def read_pythia_parquet(
         score_columns=scoring,
         **col_semantics,
         charge_column="charge",
-        mz_column="Mass",
-        rt_column="ScanTime",
+        mz_column="mz",
         peaklist_column="peaklist",
         protein_delim=";",
     )
