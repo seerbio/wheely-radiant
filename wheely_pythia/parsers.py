@@ -24,6 +24,7 @@ from pyspark.sql.functions import (
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
 
+from .dataset import PythiaDataset as _PythiaDataset
 from .scoring import get_scheme as _get_scoring_scheme
 
 _logger = _logging.getLogger(__name__)
@@ -247,11 +248,15 @@ def read_pythia_parquet(
             protein_column="proteinGroup",
         )
 
-    return _PsmDataset(
+    return _PythiaDataset(
         psms_df,
         target_column="target",
         score_columns=scoring,
         **col_semantics,
+        charge_column="charge",
+        mz_column="TODO:PrecursorMz",
+        rt_column="TODO:PrecursorRt",
+        peaklist_column="TODO:Peaklist",
         protein_delim=";",
     )
 
