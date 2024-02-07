@@ -7,6 +7,9 @@ import pyspark.sql
 
 import pytest
 
+from wheely.mammoth import PsmDataset
+from wheely.mammoth.spectra import SpectraDataset
+
 from wheely_pythia.scoring import _schemes
 from wheely_pythia.parsers import *
 
@@ -29,9 +32,38 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
         spark_session,
         scoring=score_cols,
     )
+    assert isinstance(psms, PsmDataset)
+    assert isinstance(psms, SpectraDataset)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
+
+    # Check for columns missing from .columns (dataset class check)
+    assert not [
+        col
+        for col in [
+            *psms.spectrum_columns,
+            *psms.score_columns,
+            psms.target_column,
+            psms.peptide_column,
+            psms.charge_column,
+            psms.rt_column,
+            psms.mz_column,
+            psms.peaklist_column,
+            psms.protein_column,
+        ]
+        if col not in psms.columns
+    ]
+
+    # Check for columns missing in the dataframe
+    assert not [col for col in psms.columns if col not in psms.data.columns]
+
+    assert not [
+        col for col in psms.score_columns if col not in psms.scores.columns
+    ]
+
     assert psms.data.count() == n
-    assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
+    assert not [
+        col for col in psms.spectrum_columns if col not in psms.spectra.columns
+    ]
     assert psms.protein_column is not None
 
     assert not [col for col in psms.columns if col not in psms.data.columns]
@@ -71,10 +103,34 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
     """Test that we parse legacy HDF (DDA result) files correctly"""
     psms = read_pythia_features(pythia_hdf_features, spark_session)
+
     assert isinstance(psms.data, pyspark.sql.DataFrame)
+
+    # Check for columns missing from .columns (dataset class check)
+    assert not [
+        col
+        for col in [
+            *psms.spectrum_columns,
+            *psms.score_columns,
+            psms.target_column,
+            psms.peptide_column,
+            psms.protein_column,
+        ]
+        if col not in psms.columns
+    ]
+
+    # Check for columns missing from dataframe
+    assert not [col for col in psms.columns if col not in psms.data.columns]
+
     assert psms.data.count() == 1000
     assert list(psms.spectrum_columns) == ["filename", "scanNumber"]
-    assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
+    assert not [
+        col for col in psms.spectrum_columns if col not in psms.spectra.columns
+    ]
+
+    assert not [
+        col for col in psms.score_columns if col not in psms.scores.columns
+    ]
 
     assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
     np.testing.assert_array_equal(
