@@ -38,3 +38,22 @@ class PythiaDataset(_PsmDataset, _SpectraDatasetBase):
             rt_column,
             peaklist_column,
         )
+
+    @property
+    def columns(self):
+        """
+        The columns of the :py:class:`pyspark.sql.DataFrame` that have defined
+        semantics in this dataset. Note that additional columns may be available
+        and will be preserved in the backing dataframe.
+        """
+        return [
+            *self.score_columns,
+            *self.spectrum_columns,
+            self.target_column,
+            self.peptide_column,
+            self.protein_column,
+            self.charge_column,
+            self.mz_column,
+            self.rt_column,
+            self.peaklist_column,
+        ]

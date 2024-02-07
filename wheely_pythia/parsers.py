@@ -23,6 +23,9 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
+from wheely.mammoth.spectra.utils import (
+    lists_to_peaklist as _lists_to_peaklist,
+)
 
 from .dataset import PythiaDataset as _PythiaDataset
 from .scoring import get_scheme as _get_scoring_scheme
@@ -171,11 +174,21 @@ def read_pythia_parquet(
 
     _logger.debug("Read dataframe with columns: %s", psms_df.columns)
 
+    _n_peaks = 12  # TODO
+
     addl_cols = {
         "filename": _fns.input_file_name(),
         "target": ~_col(
             "IsDecoy" if "IsDecoy" in psms_df.columns else "isDecoy"
         ).astype("boolean"),
+        "peaklist": _lists_to_peaklist(
+            _fns.array(*[f"MzFoundMean{i+1}" for i in range(_n_peaks)]).alias(
+                "MzFoundMeanVec"
+            ),
+            _fns.array(
+                *[f"IntensityFoundMax{i + 1}" for i in range(_n_peaks)]
+            ).alias("IntensityFoundMaxVec"),
+        ),
     }
 
     if "charge" not in psms_df.columns:
@@ -254,9 +267,9 @@ def read_pythia_parquet(
         score_columns=scoring,
         **col_semantics,
         charge_column="charge",
-        mz_column="TODO:PrecursorMz",
-        rt_column="TODO:PrecursorRt",
-        peaklist_column="TODO:Peaklist",
+        mz_column="Mass",
+        rt_column="ScanTime",
+        peaklist_column="peaklist",
         protein_delim=";",
     )
 
