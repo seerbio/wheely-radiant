@@ -7,6 +7,9 @@ import pyspark.sql
 
 import pytest
 
+from wheely.mammoth import PsmDataset
+from wheely.mammoth.spectra import SpectraDataset
+
 from wheely_pythia.scoring import _schemes
 from wheely_pythia.parsers import *
 
@@ -29,6 +32,8 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
         spark_session,
         scoring=score_cols,
     )
+    assert isinstance(psms, PsmDataset)
+    assert isinstance(psms, SpectraDataset)
     assert isinstance(psms.data, pyspark.sql.DataFrame)
     assert psms.data.count() == n
     assert all(col in psms.spectra.columns for col in psms.spectrum_columns)
