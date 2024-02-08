@@ -59,6 +59,9 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
     assert not [
         col for col in psms.score_columns if col not in psms.scores.columns
     ]
+    assert len(set(psms.score_columns)) == len(
+        psms.score_columns
+    ), "Found duplicated scores!"
 
     assert psms.data.count() == n
     assert not [
@@ -131,6 +134,9 @@ def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
     assert not [
         col for col in psms.score_columns if col not in psms.scores.columns
     ]
+    assert len(set(psms.score_columns)) == len(
+        psms.score_columns
+    ), "Found duplicated scores!"
 
     assert "isDecoy" in psms.data.columns, "Could not find isDecoy"
     np.testing.assert_array_equal(
