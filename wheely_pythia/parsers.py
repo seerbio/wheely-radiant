@@ -86,22 +86,6 @@ def read_pythia_features(
         return read_pythia_hdf(file_paths, spark=spark, **kwargs)
 
 
-def read_pythia_spectra(
-    location,
-    spark: _Optional[_SparkSession] = None,
-    **kwargs,
-) -> _SpectraDataset:
-    return _cast(
-        _SpectraDataset,
-        read_pythia_features(
-            location,
-            spark=spark,
-            read_spectra=True,
-            **kwargs,
-        ),
-    )
-
-
 def read_pythia_hdf(location, spark, num_partitions=None):
     file_paths = location
 
@@ -211,27 +195,7 @@ def read_pythia_parquet(
     }
 
     if read_spectra:
-        if "mzFoundMeanVec" in psms_df.columns:
-            # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
-            _to_double_array = _fns.udf(
-                lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
-                returnType="Array<double>",
-            )
-
-            addl_cols["peaklist"] = _lists_to_peaklist(
-                _to_double_array("mzFoundMeanVec"),
-                _to_double_array("intensityFoundMaxVec"),
-            )
-        else:
-            _n_peaks = 12  # TODO
-            addl_cols["peaklist"] = _lists_to_peaklist(
-                _fns.array(
-                    *[f"MzFoundMean{i+1}" for i in range(_n_peaks)]
-                ).alias("MzFoundMeanVec"),
-                _fns.array(
-                    *[f"IntensityFoundMax{i + 1}" for i in range(_n_peaks)]
-                ).alias("IntensityFoundMaxVec"),
-            )
+        addl_cols["peaklist"] = parse_peaklist(psms_df.columns)
 
     if "charge" not in psms_df.columns:
         assert (
@@ -283,8 +247,52 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
-    if "discriminateScore" not in psms_df.columns:
-        col_semantics = dict(
+    col_semantics = _get_col_semantics(psms_df.columns)
+
+    if read_spectra:
+        return _PythiaSpectraDataset(
+            psms_df,
+            target_column="target",
+            score_columns=scoring,
+            **col_semantics,
+            protein_delim=";",
+        )
+    else:
+        return _PythiaDataset(
+            psms_df,
+            target_column="target",
+            score_columns=scoring,
+            **col_semantics,
+            protein_delim=";",
+        )
+
+
+def parse_peaklist(columns, n_peaks=12):
+    if "mzFoundMeanVec" in columns:
+        # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
+        _to_double_array = _fns.udf(
+            lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
+            returnType="Array<double>",
+        )
+
+        return _lists_to_peaklist(
+            _to_double_array("mzFoundMeanVec"),
+            _to_double_array("intensityFoundMaxVec"),
+        )
+    else:
+        return _lists_to_peaklist(
+            _fns.array(*[f"MzFoundMean{i + 1}" for i in range(n_peaks)]).alias(
+                "MzFoundMeanVec"
+            ),
+            _fns.array(
+                *[f"IntensityFoundMax{i + 1}" for i in range(n_peaks)]
+            ).alias("IntensityFoundMaxVec"),
+        )
+
+
+def _get_col_semantics(columns):
+    if "discriminateScore" not in columns:
+        return dict(
             spectrum_columns=[
                 "filename",
                 "PeptideStringWithMods",
@@ -297,7 +305,7 @@ def read_pythia_parquet(
         )
     else:
         # Support legacy files with deprecated column names
-        col_semantics = dict(
+        return dict(
             spectrum_columns=[
                 "filename",
                 "peptideStringWithMods",
@@ -309,27 +317,50 @@ def read_pythia_parquet(
             protein_column="proteinGroup",
         )
 
-    if read_spectra:
-        return _PythiaSpectraDataset(
-            psms_df,
-            target_column="target",
-            score_columns=scoring,
-            **col_semantics,
-            charge_column="charge",
-            mz_column="mz",
-            peaklist_column="peaklist",
-            protein_delim=";",
+
+def read_pythia_spectra(
+    psms: _PsmDataset,
+    **kwargs,
+) -> _SpectraDataset:
+    # Try to short-circuit by reannotating known columns
+    if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
+        pass_thru_dset = _PythiaSpectraDataset(
+            psms.data.withColumn(
+                "peaklist", parse_peaklist(psms.data.columns)
+            ),
+            target_column=psms.target_column,
+            score_columns=psms.score_columns,
+            protein_delim=psms.protein_delim,
+            **_get_col_semantics(psms.data.columns),
         )
-    else:
-        return _PythiaDataset(
-            psms_df,
-            target_column="target",
-            score_columns=scoring,
-            **col_semantics,
-            charge_column="charge",
-            mz_column="mz",
-            protein_delim=";",
-        )
+        if all(c in psms.data.columns for c in pass_thru_dset.columns):
+            _logger.info("Using pass-through spectra from Pythia")
+            return pass_thru_dset
+
+    assert (
+        "filename" in psms.data.columns
+    ), "Did not find `filename` column for reading Pythia spectra!"
+
+    location = (
+        psms.data.select(_col("filename").alias("__location"))
+        .dropDuplicates()
+        .toPandas()["__location"]
+        .values
+    )
+
+    _logger.info(
+        f"Reading Pythia spectra from {len(location)} location(s): {location[:3]}{'…' if len(location) > 3 else ''}"
+    )
+
+    return _cast(
+        _SpectraDataset,
+        read_pythia_features(
+            location,
+            spark=psms.data.sparkSession,
+            read_spectra=True,
+            **kwargs,
+        ),
+    )
 
 
 def read_pythia_scored_rows(path) -> iter:
