@@ -10,6 +10,7 @@ from typing import (
     Iterable as _Iterable,
     Optional as _Optional,
     Union as _Union,
+    cast as _cast,
 )
 
 import pandas as _pd
@@ -24,11 +25,15 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
+from wheely.mammoth.spectra import SpectraDataset as _SpectraDataset
 from wheely.mammoth.spectra.utils import (
     lists_to_peaklist as _lists_to_peaklist,
 )
 
-from .dataset import PythiaDataset as _PythiaDataset
+from .dataset import (
+    PythiaDataset as _PythiaDataset,
+    PythiaSpectraDataset as _PythiaSpectraDataset,
+)
 from .scoring import get_scheme as _get_scoring_scheme
 
 _logger = _logging.getLogger(__name__)
@@ -77,6 +82,28 @@ def read_pythia_features(
         raise ValueError(
             "Can't read a mix of formats! Only some locations ended in '.psm.scored'"
         )
+    else:
+        return read_pythia_hdf(file_paths, spark=spark, **kwargs)
+
+
+def read_pythia_spectra(
+    location,
+    spark: _Optional[_SparkSession] = None,
+    **kwargs,
+) -> _SpectraDataset:
+    return _cast(
+        _SpectraDataset,
+        read_pythia_features(
+            location,
+            spark=spark,
+            read_spectra=True,
+            **kwargs,
+        ),
+    )
+
+
+def read_pythia_hdf(location, spark, num_partitions=None):
+    file_paths = location
 
     # Distribute the file paths
     files_rdd = spark.sparkContext.parallelize(
@@ -141,6 +168,7 @@ def read_pythia_parquet(
             _Callable[[], _Union[str, _Iterable[str], _Dict[str, _Column]]],
         ]
     ] = None,
+    read_spectra: bool = False,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
@@ -182,27 +210,28 @@ def read_pythia_parquet(
         ).astype("boolean"),
     }
 
-    if "mzFoundMeanVec" in psms_df.columns:
-        # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
-        _to_double_array = _fns.udf(
-            lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
-            returnType="Array<double>",
-        )
+    if read_spectra:
+        if "mzFoundMeanVec" in psms_df.columns:
+            # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
+            _to_double_array = _fns.udf(
+                lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
+                returnType="Array<double>",
+            )
 
-        addl_cols["peaklist"] = _lists_to_peaklist(
-            _to_double_array("mzFoundMeanVec"),
-            _to_double_array("intensityFoundMaxVec"),
-        )
-    else:
-        _n_peaks = 12  # TODO
-        addl_cols["peaklist"] = _lists_to_peaklist(
-            _fns.array(*[f"MzFoundMean{i+1}" for i in range(_n_peaks)]).alias(
-                "MzFoundMeanVec"
-            ),
-            _fns.array(
-                *[f"IntensityFoundMax{i + 1}" for i in range(_n_peaks)]
-            ).alias("IntensityFoundMaxVec"),
-        )
+            addl_cols["peaklist"] = _lists_to_peaklist(
+                _to_double_array("mzFoundMeanVec"),
+                _to_double_array("intensityFoundMaxVec"),
+            )
+        else:
+            _n_peaks = 12  # TODO
+            addl_cols["peaklist"] = _lists_to_peaklist(
+                _fns.array(
+                    *[f"MzFoundMean{i+1}" for i in range(_n_peaks)]
+                ).alias("MzFoundMeanVec"),
+                _fns.array(
+                    *[f"IntensityFoundMax{i + 1}" for i in range(_n_peaks)]
+                ).alias("IntensityFoundMaxVec"),
+            )
 
     if "charge" not in psms_df.columns:
         assert (
@@ -280,16 +309,27 @@ def read_pythia_parquet(
             protein_column="proteinGroup",
         )
 
-    return _PythiaDataset(
-        psms_df,
-        target_column="target",
-        score_columns=scoring,
-        **col_semantics,
-        charge_column="charge",
-        mz_column="mz",
-        peaklist_column="peaklist",
-        protein_delim=";",
-    )
+    if read_spectra:
+        return _PythiaSpectraDataset(
+            psms_df,
+            target_column="target",
+            score_columns=scoring,
+            **col_semantics,
+            charge_column="charge",
+            mz_column="mz",
+            peaklist_column="peaklist",
+            protein_delim=";",
+        )
+    else:
+        return _PythiaDataset(
+            psms_df,
+            target_column="target",
+            score_columns=scoring,
+            **col_semantics,
+            charge_column="charge",
+            mz_column="mz",
+            protein_delim=";",
+        )
 
 
 def read_pythia_scored_rows(path) -> iter:

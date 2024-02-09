@@ -22,7 +22,13 @@ from wheely_pythia.parsers import *
         *_schemes.values(),
     ],
 )
-def test_read_pythia_features(spark_session, pythia_features, score_cols):
+@pytest.mark.parametrize(
+    "read_spectra",
+    [True, False],
+)
+def test_read_pythia_features(
+    spark_session, pythia_features, score_cols, read_spectra
+):
     """Test that we parse DIA scoring feature (parquet) files correctly"""
 
     n = 256  # Expected PSM (row) count
@@ -31,9 +37,10 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
         pythia_features,
         spark_session,
         scoring=score_cols,
+        read_spectra=read_spectra,
     )
     assert isinstance(psms, PsmDataset)
-    assert isinstance(psms, SpectraDataset)
+    assert isinstance(psms, SpectraDataset) or not read_spectra
     assert isinstance(psms.data, pyspark.sql.DataFrame)
 
     # Check for columns missing from .columns (dataset class check)
@@ -44,11 +51,17 @@ def test_read_pythia_features(spark_session, pythia_features, score_cols):
             *psms.score_columns,
             psms.target_column,
             psms.peptide_column,
-            psms.charge_column,
-            psms.rt_column,
-            psms.mz_column,
-            psms.peaklist_column,
             psms.protein_column,
+            *(
+                [
+                    psms.charge_column,
+                    psms.rt_column,
+                    psms.mz_column,
+                    psms.peaklist_column,
+                ]
+                if read_spectra
+                else []
+            ),
         ]
         if col not in psms.columns
     ]
