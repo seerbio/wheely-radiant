@@ -10,6 +10,7 @@ from typing import (
     Iterable as _Iterable,
     Optional as _Optional,
     Union as _Union,
+    cast as _cast,
 )
 
 import pandas as _pd
@@ -24,6 +25,7 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.utils import listify as _listify
+from wheely.mammoth.spectra import SpectraDataset as _SpectraDataset
 from wheely.mammoth.spectra.utils import (
     lists_to_peaklist as _lists_to_peaklist,
 )
@@ -80,6 +82,28 @@ def read_pythia_features(
         raise ValueError(
             "Can't read a mix of formats! Only some locations ended in '.psm.scored'"
         )
+    else:
+        return read_pythia_hdf(file_paths, spark=spark, **kwargs)
+
+
+def read_pythia_spectra(
+    location,
+    spark: _Optional[_SparkSession] = None,
+    **kwargs,
+) -> _SpectraDataset:
+    return _cast(
+        _SpectraDataset,
+        read_pythia_features(
+            location,
+            spark=spark,
+            read_spectra=True,
+            **kwargs,
+        ),
+    )
+
+
+def read_pythia_hdf(location, spark, num_partitions=None):
+    file_paths = location
 
     # Distribute the file paths
     files_rdd = spark.sparkContext.parallelize(
