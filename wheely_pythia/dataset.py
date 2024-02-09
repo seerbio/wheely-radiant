@@ -74,16 +74,16 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
     ):
         PythiaDataset.__init__(
             self,
-            psms,
-            target_column,
-            score_columns,
-            spectrum_columns,
-            peptide_column,
-            protein_column,
-            charge_column,
-            mz_column,
-            rt_column,
-            protein_delim,
+            psms=psms,
+            target_column=target_column,
+            score_columns=score_columns,
+            spectrum_columns=spectrum_columns,
+            rt_column=rt_column,
+            peptide_column=peptide_column,
+            protein_column=protein_column,
+            protein_delim=protein_delim,
+            charge_column=charge_column,
+            mz_column=mz_column,
         )
         _SpectraDatasetMixin.__init__(
             self,
