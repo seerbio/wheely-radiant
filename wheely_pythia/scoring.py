@@ -71,7 +71,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "AltTargetKeyIdTimeDeltaCharge3_3",
         "AltTargetKeyIdTimeDeltaCharge4_1",
         "AltTargetKeyIdTimeDeltaCharge4_2",
-        "AltTargetKeyIdTimeDeltaCharge4_3"
+        "AltTargetKeyIdTimeDeltaCharge4_3",
         "AminoAcidCountA",
         "AminoAcidCountC",
         "AminoAcidCountD",
@@ -420,7 +420,7 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "AltTargetKeyIdTimeDeltaCharge3_3",
         "AltTargetKeyIdTimeDeltaCharge4_1",
         "AltTargetKeyIdTimeDeltaCharge4_2",
-        "AltTargetKeyIdTimeDeltaCharge4_3"
+        "AltTargetKeyIdTimeDeltaCharge4_3",
         "AminoAcidCountA",
         "AminoAcidCountC",
         "AminoAcidCountD",
@@ -620,7 +620,7 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         # 'TheoIntensity9',
         "TopBottomRatio",
         "TopBottomRatioNorm",
-        "TotalIntensityLog"
+        "TotalIntensityLog",
     ]
 
     _missing = set(pythia_scores) - set(columns)
