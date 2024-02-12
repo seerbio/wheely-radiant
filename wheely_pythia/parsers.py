@@ -201,6 +201,8 @@ def read_pythia_parquet(
     if charge_col not in psms_df.columns:
         if "Charge" in psms_df.columns:
             charge_col = "Charge"
+        else:
+            raise ValueError("Charge or charge column not found")
 
     addl_cols["mz"] = (
         _col("Mass") + _fns.lit(1.007276) * _col(charge_col)
