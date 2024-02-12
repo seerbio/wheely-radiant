@@ -201,13 +201,6 @@ def read_pythia_parquet(
     if charge_col not in psms_df.columns:
         if "Charge" in psms_df.columns:
             charge_col = "Charge"
-        else:
-            assert (
-                "ChargeNorm" in psms_df.columns
-            ), "Did not find PSM charge information for v1+ results!"
-            addl_cols[charge_col] = _fns.col("ChargeNorm").astype(
-                "integer"
-            ) + _fns.lit(2)
 
     addl_cols["mz"] = (
         _col("Mass") + _fns.lit(1.007276) * _col(charge_col)

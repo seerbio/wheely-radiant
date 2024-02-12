@@ -98,7 +98,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "AminoAcidCountU",
         "AminoAcidCountX",
         "AminoAcidCountZ",
-        "ChargeNorm",
+        "Charge",
         # 'ClassifierScore',                 # From classifier
         "ColumnApexIndexRatiosToAnchor1",
         "ColumnApexIndexRatiosToAnchor10",
