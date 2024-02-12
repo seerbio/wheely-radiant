@@ -197,17 +197,21 @@ def read_pythia_parquet(
     if read_spectra:
         addl_cols["peaklist"] = parse_peaklist(psms_df.columns)
 
-    if "charge" not in psms_df.columns:
-        assert (
-            "ChargeNorm" in psms_df.columns
-        ), "Did not find PSM charge information for v1+ results!"
-        addl_cols["charge"] = _fns.col("ChargeNorm").astype(
-            "integer"
-        ) + _fns.lit(2)
+    charge_col: str = "charge"
+    if charge_col not in psms_df.columns:
+        if "Charge" in psms_df.columns:
+            charge_col = "Charge"
+        else:
+            assert (
+                "ChargeNorm" in psms_df.columns
+            ), "Did not find PSM charge information for v1+ results!"
+            addl_cols[charge_col] = _fns.col("ChargeNorm").astype(
+                "integer"
+            ) + _fns.lit(2)
 
     addl_cols["mz"] = (
-        _col("Mass") + _fns.lit(1.007276) * _col("charge")
-    ) / _col("charge")
+        _col("Mass") + _fns.lit(1.007276) * _col(charge_col)
+    ) / _col(charge_col)
 
     psms_df = psms_df.withColumns(addl_cols)
 
@@ -247,7 +251,7 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
-    col_semantics = _get_col_semantics(psms_df.columns)
+    col_semantics = _get_col_semantics(psms_df.columns, charge_col=charge_col)
 
     if read_spectra:
         return _PythiaSpectraDataset(
@@ -290,13 +294,13 @@ def parse_peaklist(columns, n_peaks=12):
         )
 
 
-def _get_col_semantics(columns):
+def _get_col_semantics(columns, charge_col="charge"):
     if "discriminateScore" not in columns:
         return dict(
             spectrum_columns=[
                 "filename",
                 "PeptideStringWithMods",
-                "charge",
+                charge_col,
                 "ScanNumber",
             ],
             rt_column="ScanTime",
@@ -309,7 +313,7 @@ def _get_col_semantics(columns):
             spectrum_columns=[
                 "filename",
                 "peptideStringWithMods",
-                "charge",
+                charge_col,
                 "scanNumber",
             ],
             rt_column="scanTime",
@@ -331,7 +335,12 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
-            **_get_col_semantics(psms.data.columns),
+            **_get_col_semantics(
+                psms.data.columns,
+                charge_col=(
+                    "charge" if "charge" in psms.data.columns else "Charge"
+                ),
+            ),
         )
         if all(c in psms.data.columns for c in pass_thru_dset.columns):
             _logger.info("Using pass-through spectra from Pythia")
