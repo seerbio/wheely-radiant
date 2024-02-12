@@ -321,6 +321,11 @@ def read_pythia_spectra(
     psms: _PsmDataset,
     **kwargs,
 ) -> _SpectraDataset:
+
+    charge_column_in_columns: bool = ("charge" in psm.data.columns) | ("Charge" in psm.data.columns)
+    if not charge_column_in_columns:
+        raise ValueError("Charge or charge column not found")
+
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
         pass_thru_dset = _PythiaSpectraDataset(
@@ -330,6 +335,7 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
+
             **_get_col_semantics(
                 psms.data.columns,
                 charge_col=(
