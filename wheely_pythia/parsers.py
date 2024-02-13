@@ -83,7 +83,9 @@ def read_pythia_features(
             "Can't read a mix of formats! Only some locations ended in '.psm.scored'"
         )
     else:
-        return read_pythia_hdf(file_paths, spark=spark, **kwargs)
+        return read_pythia_hdf(
+            file_paths, num_partitions=num_partitions, spark=spark, **kwargs
+        )
 
 
 def read_pythia_hdf(location, spark, num_partitions=None):
