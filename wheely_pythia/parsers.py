@@ -322,8 +322,8 @@ def read_pythia_spectra(
     **kwargs,
 ) -> _SpectraDataset:
 
-    charge_column_in_columns: bool = ("charge" in psm.data.columns) | (
-        "Charge" in psm.data.columns
+    charge_column_in_columns: bool = ("charge" in psms.data.columns) | (
+        "Charge" in psms.data.columns
     )
     if not charge_column_in_columns:
         raise ValueError("Charge or charge column not found")
