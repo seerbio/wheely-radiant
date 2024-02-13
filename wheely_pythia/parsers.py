@@ -197,17 +197,16 @@ def read_pythia_parquet(
     if read_spectra:
         addl_cols["peaklist"] = parse_peaklist(psms_df.columns)
 
-    if "charge" not in psms_df.columns:
-        assert (
-            "ChargeNorm" in psms_df.columns
-        ), "Did not find PSM charge information for v1+ results!"
-        addl_cols["charge"] = _fns.col("ChargeNorm").astype(
-            "integer"
-        ) + _fns.lit(2)
+    charge_col: str = "charge"
+    if charge_col not in psms_df.columns:
+        if "Charge" in psms_df.columns:
+            charge_col = "Charge"
+        else:
+            raise ValueError("Charge or charge column not found")
 
     addl_cols["mz"] = (
-        _col("Mass") + _fns.lit(1.007276) * _col("charge")
-    ) / _col("charge")
+        _col("Mass") + _fns.lit(1.007276) * _col(charge_col)
+    ) / _col(charge_col)
 
     psms_df = psms_df.withColumns(addl_cols)
 
@@ -247,7 +246,7 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
-    col_semantics = _get_col_semantics(psms_df.columns)
+    col_semantics = _get_col_semantics(psms_df.columns, charge_col=charge_col)
 
     if read_spectra:
         return _PythiaSpectraDataset(
@@ -290,15 +289,16 @@ def parse_peaklist(columns, n_peaks=12):
         )
 
 
-def _get_col_semantics(columns):
+def _get_col_semantics(columns, charge_col=None):
     if "discriminateScore" not in columns:
         return dict(
             spectrum_columns=[
                 "filename",
                 "PeptideStringWithMods",
-                "charge",
+                "Charge",
                 "ScanNumber",
             ],
+            charge_column=charge_col or "Charge",
             rt_column="ScanTime",
             peptide_column="PeptideStringWithMods",
             protein_column="ProteinGroup",
@@ -312,6 +312,7 @@ def _get_col_semantics(columns):
                 "charge",
                 "scanNumber",
             ],
+            charge_column=charge_col or "charge",
             rt_column="scanTime",
             peptide_column="peptideStringWithMods",
             protein_column="proteinGroup",
@@ -322,6 +323,7 @@ def read_pythia_spectra(
     psms: _PsmDataset,
     **kwargs,
 ) -> _SpectraDataset:
+
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
         pass_thru_dset = _PythiaSpectraDataset(
