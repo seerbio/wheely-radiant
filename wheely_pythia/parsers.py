@@ -289,15 +289,16 @@ def parse_peaklist(columns, n_peaks=12):
         )
 
 
-def _get_col_semantics(columns, charge_col="charge"):
+def _get_col_semantics(columns, charge_col=None):
     if "discriminateScore" not in columns:
         return dict(
             spectrum_columns=[
                 "filename",
                 "PeptideStringWithMods",
-                charge_col,
+                "Charge",
                 "ScanNumber",
             ],
+            charge_col=charge_col or "Charge",
             rt_column="ScanTime",
             peptide_column="PeptideStringWithMods",
             protein_column="ProteinGroup",
@@ -308,9 +309,10 @@ def _get_col_semantics(columns, charge_col="charge"):
             spectrum_columns=[
                 "filename",
                 "peptideStringWithMods",
-                charge_col,
+                "charge",
                 "scanNumber",
             ],
+            charge_col=charge_col or "charge",
             rt_column="scanTime",
             peptide_column="peptideStringWithMods",
             protein_column="proteinGroup",
@@ -322,12 +324,6 @@ def read_pythia_spectra(
     **kwargs,
 ) -> _SpectraDataset:
 
-    charge_column_in_columns: bool = ("charge" in psms.data.columns) | (
-        "Charge" in psms.data.columns
-    )
-    if not charge_column_in_columns:
-        raise ValueError("Charge or charge column not found")
-
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
         pass_thru_dset = _PythiaSpectraDataset(
@@ -337,12 +333,7 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
-            **_get_col_semantics(
-                psms.data.columns,
-                charge_col=(
-                    "charge" if "charge" in psms.data.columns else "Charge"
-                ),
-            ),
+            **_get_col_semantics(psms.data.columns),
         )
         if all(c in psms.data.columns for c in pass_thru_dset.columns):
             _logger.info("Using pass-through spectra from Pythia")
