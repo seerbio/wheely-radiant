@@ -322,7 +322,9 @@ def read_pythia_spectra(
     **kwargs,
 ) -> _SpectraDataset:
 
-    charge_column_in_columns: bool = ("charge" in psm.data.columns) | ("Charge" in psm.data.columns)
+    charge_column_in_columns: bool = ("charge" in psm.data.columns) | (
+        "Charge" in psm.data.columns
+    )
     if not charge_column_in_columns:
         raise ValueError("Charge or charge column not found")
 
@@ -335,7 +337,6 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
-
             **_get_col_semantics(
                 psms.data.columns,
                 charge_col=(
