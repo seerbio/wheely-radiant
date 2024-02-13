@@ -64,11 +64,11 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
         target_column,
         score_columns,
         spectrum_columns,
+        charge_column,
         rt_column,
         peptide_column,
         protein_column,
         protein_delim=None,
-        charge_column="charge",
         mz_column="mz",
         peaklist_column="peaklist",
     ):
