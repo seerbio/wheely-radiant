@@ -206,6 +206,8 @@ def read_pythia_parquet(
         else:
             raise ValueError("Charge or charge column not found")
 
+    psms_df = psms_df.withColumn(charge_col, _col(charge_col).cast("integer"))
+
     addl_cols["mz"] = (
         _col("Mass") + _fns.lit(1.007276) * _col(charge_col)
     ) / _col(charge_col)
