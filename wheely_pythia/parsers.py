@@ -271,7 +271,7 @@ def read_pythia_parquet(
 
 
 def parse_peaklist(columns, n_peaks=12):
-    if "mzSearchedMeanVec" in columns:
+    if "mzSearchedVec" in columns:
         # _to_float_array = _fns.udf(lambda b: _struct.unpack("<" + "f" * int(len(b) / 4), b), returnType="Array<float>")
         _to_double_array = _fns.udf(
             lambda b: _struct.unpack("<" + "d" * int(len(b) / 8), b),
@@ -279,14 +279,14 @@ def parse_peaklist(columns, n_peaks=12):
         )
 
         return _lists_to_peaklist(
-            _to_double_array("mzSearchedMeanVec"),
+            _to_double_array("mzSearchedVec"),
             _to_double_array("intensityFoundMaxVec"),
         )
     else:
         return _lists_to_peaklist(
-            _fns.array(
-                *[f"MzSearchedMean{i + 1}" for i in range(n_peaks)]
-            ).alias("MzSearchedMeanVec"),
+            _fns.array(*[f"MzSearched{i + 1}" for i in range(n_peaks)]).alias(
+                "MzSearchedVec"
+            ),
             _fns.array(
                 *[f"IntensityFoundMax{i + 1}" for i in range(n_peaks)]
             ).alias("IntensityFoundMaxVec"),
