@@ -27,9 +27,10 @@ from wheely_pythia.parsers import *
     [True, False],
 )
 def test_read_pythia_features(
-    spark_session, pythia_features, score_cols, read_spectra
+    caplog, spark_session, pythia_features, score_cols, read_spectra
 ):
     """Test that we parse DIA scoring feature (parquet) files correctly"""
+    caplog.set_level(logging.CRITICAL)  # we only want to capture logs later on
 
     n = 256  # Expected PSM (row) count
 
@@ -114,6 +115,16 @@ def test_read_pythia_features(
     ndec = 0  # TODO: test file has no decoys!
     assert target_df[target_df.columns[0]].sum() == n - ndec
     assert (~target_df[target_df.columns[0]]).sum() == ndec
+
+    # Regardless of read_spectra, we should be able to "pass through" spectra without a join.
+    with caplog.at_level(logging.INFO):
+        spectra_dset = read_pythia_spectra(psms)
+        assert (
+            "pass-thr" in caplog.text
+        ), "Did not find log message confirming spectra pass-through!"
+        assert (
+            "Reading Pythia spectra" not in caplog.text
+        ), "Found log message confirming spectra are re-read!"
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
