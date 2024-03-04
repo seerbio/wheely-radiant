@@ -117,14 +117,17 @@ def test_read_pythia_features(
     assert (~target_df[target_df.columns[0]]).sum() == ndec
 
     # Regardless of read_spectra, we should be able to "pass through" spectra without a join.
-    with caplog.at_level(logging.INFO):
-        spectra_dset = read_pythia_spectra(psms)
-        assert (
-            "pass-thr" in caplog.text
-        ), "Did not find log message confirming spectra pass-through!"
-        assert (
-            "Reading Pythia spectra" not in caplog.text
-        ), "Found log message confirming spectra are re-read!"
+    # This only works for v1+ files, as array-typed ("vec") columns cause complications with
+    # downstream modules that can't handle structured datatypes.
+    if "discriminateScore" not in psms.data.columns:
+        with caplog.at_level(logging.INFO):
+            spectra_dset = read_pythia_spectra(psms)
+            assert (
+                "pass-thr" in caplog.text
+            ), "Did not find log message confirming spectra pass-through!"
+            assert (
+                "Reading Pythia spectra" not in caplog.text
+            ), "Found log message confirming spectra are re-read!"
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
