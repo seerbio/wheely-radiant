@@ -339,7 +339,9 @@ def read_pythia_spectra(
             protein_delim=psms.protein_delim,
             **_get_col_semantics(psms.data.columns),
         )
-        if all(c in psms.data.columns for c in pass_thru_dset.columns):
+        if all(
+            c in pass_thru_dset.data.columns for c in pass_thru_dset.columns
+        ):
             _logger.info("Using pass-through spectra from Pythia")
             return pass_thru_dset
 
