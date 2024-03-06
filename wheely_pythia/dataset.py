@@ -56,6 +56,19 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
             self.rt_column,
         ]
 
+    def with_data(self, data, **kwargs):
+        return super().with_data(
+            data,
+            **dict(
+                dict(
+                    charge_column=self.charge_column,
+                    rt_column=self.rt_column,
+                    mz_column=self.mz_column,
+                ),
+                **kwargs,
+            ),
+        )
+
 
 class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
     def __init__(
@@ -108,3 +121,14 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
             self.rt_column,
             self.peaklist_column,
         ]
+
+    def with_data(self, data, **kwargs):
+        return super().with_data(
+            data,
+            **dict(
+                dict(
+                    peaklist_column=self.peaklist_column,
+                ),
+                **kwargs,
+            ),
+        )
