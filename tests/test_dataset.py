@@ -34,6 +34,16 @@ _dset_types = [PythiaDataset, PythiaSpectraDataset]
             )
             for typ in _dset_types
         ],
+        # Test that non-default peaklist column name is supported
+        lambda psms, **kwargs: PythiaSpectraDataset(
+            psms.withColumnRenamed(
+                kwargs.get("peaklist_column", "peaklist"), "__custom_peaklist"
+            ).drop(kwargs.get("peaklist_column", "peaklist")),
+            **dict(
+                kwargs,
+                peaklist_column="__custom_peaklist",
+            ),
+        ),
     ]
 )
 def dataset_type(request):
@@ -42,7 +52,10 @@ def dataset_type(request):
 
 @pytest.fixture
 def pythia_data(pythia_features):
-    dset = read_pythia_features(pythia_features)
+    # Must pass read_spectra=True just in case we then try to instantiate a SpectraDataset.
+    # Note that the returned class here is irrelevant, we just want the DataFrame and col. names.
+    dset = read_pythia_features(pythia_features, read_spectra=True)
+
     return (
         dset.data,
         {
@@ -90,6 +103,7 @@ def test_properties(pythia_data, dataset_type):
         pythia_df.toPandas().loc[:, ["target"]],
     )
 
+    # Check that the dataset `columns` property is correct
     assert all(c is not None for c in psms.columns)
     assert set(psms.columns) == {
         psms.target_column,
@@ -103,21 +117,23 @@ def test_properties(pythia_data, dataset_type):
         *[getattr(psms, k) for k in {"peaklist_column"} if hasattr(psms, k)],
     }
 
+    for c in psms.columns:
+        assert (c in psms.data.columns) or (
+            _drop_quotes(c) in psms.data.columns
+        )
 
-def test_mutate(pythia_df, dataset_type):
+
+def test_mutate(pythia_data, dataset_type):
     """Check mutating a PsmDataset object."""
+    pythia_df, cols = pythia_data
+
     psms = dataset_type(
         psms=pythia_df,
-        target_column="target",
-        spectrum_columns=["file", "scan"],
-        score_columns=["combined p-value", "x"],
-        peptide_column="sequence",
-        protein_column="protein id",
-        protein_delim=",",
+        **cols,
     )
 
     n_rows = 5
-    n_targets = 4
+    n_targets = 5
 
     mut = psms.with_data(
         psms.data.limit(n_rows).withColumn(
@@ -128,8 +144,10 @@ def test_mutate(pythia_df, dataset_type):
 
     assert isinstance(mut, type(psms))
 
+    if hasattr(psms, "peaklist_column"):
+        assert psms.peaklist_column == mut.peaklist_column
+
     assert mut.data.count() == n_rows
-    # assert mut.target_column == "isDecoy"
     assert (
         mut.data.select(
             pyspark.sql.functions.sum(mut.targets.astype("int"))
@@ -137,12 +155,26 @@ def test_mutate(pythia_df, dataset_type):
         == n_rows - n_targets
     )
 
-    # assert list(mut.spectra.columns) == ["file", "scan"]
-    # assert list(mut.scores.columns) == ["combined p-value", "x"]
-    # assert mut.peptide_column == "sequence"
-    # assert mut.protein_column == "protein id"
-    assert mut.protein_delim == ","
+    for k, v in cols.items():
+        if k == "target_column":
+            continue
+        assert _drop_quotes(getattr(mut, k)) == v, f"Mismatch for {k}"
 
-    if isinstance(mut, ConfidenceDataset):
-        assert mut.qvalue_column == psms.qvalue_column
-        assert mut.pi0 == psms.pi0
+    # Check that the dataset `columns` property is correct
+    assert all(c is not None for c in mut.columns)
+    assert set(mut.columns) == {
+        mut.target_column,
+        *mut.spectrum_columns,
+        *mut.score_columns,
+        mut.charge_column,
+        mut.mz_column,
+        mut.rt_column,
+        mut.peptide_column,
+        mut.protein_column,
+        *[getattr(mut, k) for k in {"peaklist_column"} if hasattr(mut, k)],
+    }
+
+    for c in psms.columns:
+        assert (c in psms.data.columns) or (
+            _drop_quotes(c) in psms.data.columns
+        )
