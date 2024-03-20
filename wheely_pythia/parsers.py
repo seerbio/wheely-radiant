@@ -278,12 +278,12 @@ def parse_peaklist(columns, n_peaks=12):
             returnType="Array<double>",
         )
 
-        return _lists_to_peaklist(
+        result = _lists_to_peaklist(
             _to_double_array("mzSearchedVec"),
             _to_double_array("intensityFoundMaxVec"),
         )
     else:
-        return _lists_to_peaklist(
+        result = _lists_to_peaklist(
             _fns.array(*[f"MzSearched{i + 1}" for i in range(n_peaks)]).alias(
                 "MzSearchedVec"
             ),
@@ -291,6 +291,12 @@ def parse_peaklist(columns, n_peaks=12):
                 *[f"IntensityFoundMax{i + 1}" for i in range(n_peaks)]
             ).alias("IntensityFoundMaxVec"),
         )
+
+    return _fns.filter(result, _is_valid_peak)
+
+
+def _is_valid_peak(pk_col: _Column) -> _Column:
+    return (pk_col.getItem(0) > 0) & (pk_col.getItem(1) > 0)
 
 
 def _get_col_semantics(columns, charge_col=None):

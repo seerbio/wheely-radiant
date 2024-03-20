@@ -116,6 +116,25 @@ def test_read_pythia_features(
     assert target_df[target_df.columns[0]].sum() == n - ndec
     assert (~target_df[target_df.columns[0]]).sum() == ndec
 
+    if read_spectra:
+        # Check for invalid peaks
+        assert hasattr(psms, "peaklists")
+        np.testing.assert_array_equal(
+            psms.data.select(
+                pyspark.sql.functions.size(
+                    pyspark.sql.functions.filter(
+                        psms.peaklists,
+                        lambda pk: (pk.getItem(0) > 0) & (pk.getItem(1) > 0),
+                    )
+                )
+            )
+            .toPandas()
+            .values,
+            psms.data.select(pyspark.sql.functions.size(psms.peaklists))
+            .toPandas()
+            .values,
+        )
+
     # Regardless of read_spectra, we should be able to "pass through" spectra without a join.
     # This only works for v1+ files, as array-typed ("vec") columns cause complications with
     # downstream modules that can't handle structured datatypes.
@@ -128,6 +147,27 @@ def test_read_pythia_features(
             assert (
                 "Reading Pythia spectra" not in caplog.text
             ), "Found log message confirming spectra are re-read!"
+
+            # Check for invalid peaks
+            assert hasattr(spectra_dset, "peaklists")
+            np.testing.assert_array_equal(
+                spectra_dset.data.select(
+                    pyspark.sql.functions.size(
+                        pyspark.sql.functions.filter(
+                            spectra_dset.peaklists,
+                            lambda pk: (pk.getItem(0) > 0)
+                            & (pk.getItem(1) > 0),
+                        )
+                    )
+                )
+                .toPandas()
+                .values,
+                spectra_dset.data.select(
+                    pyspark.sql.functions.size(spectra_dset.peaklists)
+                )
+                .toPandas()
+                .values,
+            )
 
 
 def test_read_pythia_hdf_features(spark_session, pythia_hdf_features):
