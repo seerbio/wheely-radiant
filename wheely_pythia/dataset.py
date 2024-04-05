@@ -22,12 +22,13 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
         _PsmDataset.__init__(
             self,
             psms,
-            target_column,
-            score_columns,
-            spectrum_columns,
-            peptide_column,
-            protein_column,
-            protein_delim,
+            target_column=target_column,
+            score_columns=score_columns,
+            spectrum_columns=spectrum_columns,
+            peptide_column=peptide_column,
+            charge_column=charge_column,
+            protein_column=protein_column,
+            protein_delim=protein_delim,
         )
         _PrecursorDatasetBase.__init__(
             self,
