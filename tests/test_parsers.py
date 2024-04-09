@@ -77,6 +77,9 @@ def test_read_pythia_features(
         psms.score_columns
     ), "Found duplicated scores!"
 
+    if "TotalIntensityLog" in psms.data.columns:
+        assert "TotalIntensityLog" not in psms.score_columns
+
     assert psms.data.count() == n
     assert not [
         col for col in psms.spectrum_columns if col not in psms.spectra.columns
