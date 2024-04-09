@@ -243,6 +243,13 @@ def read_pythia_parquet(
         s in psms_df.columns for s in scoring
     ), f"Missing scoring columns! Could not find: {list(set(scoring) - set(psms_df.columns))} in {list(psms_df.columns)}"
 
+    if "TotalIntensityLog" in scoring:
+        scoring = [
+            c if c != "TotalIntensityLog" else "__TotalIntensityLog"
+            for c in scoring
+        ]
+        psms_df = psms_df.withColumn("__TotalIntensityLog", _col("TotalIntensityLog"))
+
     # Drop any vector-typed columns (really, binary blobs). Any access to these columns can be
     # performed by passing appropriate `pyspark.sql.Column`s (in a dict) to the `scoring` parameter.
     # For now, we simply recognize these columns by their name suffix. # TODO: check schema instead
