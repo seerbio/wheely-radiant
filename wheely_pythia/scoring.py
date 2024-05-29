@@ -132,7 +132,13 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "CosineSimShadowsToAnchor9",
         "CosineSimSpectrum",
         "CosineSimSpectrumCubed",
+        "CosineSimSpectrumOverTime",
+        "CosineSimSpectrumOverTimeCubed",
+        "CosineSimSpectrumStDev",
         "CosineSimSum100",
+        "CosineSimSum100MS1",
+        "CosineSimSum100Window1p5X",
+        "CosineSimSum100Window2X",
         "CosineSimSum20",
         "CosineSimSum45",
         "CosineSimSumBottom6",
@@ -166,6 +172,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "KlDivSpectrum",
         "KlDivSpectrumCubeRoot",
         "Mass",
+        "MS1Averagine",
         "Ms1IntensityFound100",
         "Ms1IntensityFound45",
         "Ms1IntensityFound20",
@@ -295,6 +302,8 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "TopBottomRatio",
         "TopBottomRatioNorm",
         "TotalIntensityLog",
+        "TotalIntensityPeakHeights",
+        "TotalIntensityRaw",
     ]
 
     _missing = set(pythia_scores) - set(columns)
@@ -505,7 +514,13 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "CosineSimShadowsToAnchor9",
         "CosineSimSpectrum",
         "CosineSimSpectrumCubed",
+        "CosineSimSpectrumOverTime",
+        "CosineSimSpectrumOverTimeCubed",
+        "CosineSimSpectrumStDev",
         "CosineSimSum100",
+        "CosineSimSum100MS1",
+        "CosineSimSum100Window1p5X",
+        "CosineSimSum100Window2X",
         "CosineSimSum20",
         "CosineSimSum45",
         "CosineSimSumBottom6",
@@ -540,6 +555,7 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "KlDivSpectrum",
         "KlDivSpectrumCubeRoot",
         "Mass",  # Keep this as a peptide correction factor
+        "MS1Averagine",
         "Ms1IntensityFound100",
         "Ms1IntensityFound45",
         "Ms1IntensityFound20",
@@ -669,6 +685,8 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "TopBottomRatio",
         "TopBottomRatioNorm",
         "TotalIntensityLog",
+        "TotalIntensityPeakHeights",
+        "TotalIntensityRaw",
     ]
 
     _missing = set(pythia_scores) - set(columns)
