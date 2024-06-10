@@ -35,6 +35,7 @@ def spark_session(request):
 @pytest.fixture(
     params=[
         "data/1.mzML.subset.v1.prqFF.pythiaDIA",
+        "data/EXP22092_2022ms0742X32_A.raw.mzML_trunc.prqFF.pythiaDIA",
     ]
 )
 def pythia_features(request):
