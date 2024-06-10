@@ -281,6 +281,7 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "ShadowsIntensityRatio8",
         "ShadowsIntensityRatio9",
         # 'TargetKey',
+        "TargetWindowLocation",
         "TheoFragmentCount",
         "TheoIntensity1",
         "TheoIntensity10",
@@ -603,6 +604,7 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "ShadowsIntensityRatio8",
         "ShadowsIntensityRatio9",
         # 'TargetKey',
+        "TargetWindowLocation",
         "TheoFragmentCount",
         # 'TheoIntensity1',          # All reencoded below
         # 'TheoIntensity10',
