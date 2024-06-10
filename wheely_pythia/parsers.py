@@ -42,7 +42,6 @@ _logger = _logging.getLogger(__name__)
 def read_pythia_features(
     location,
     spark: _Optional[_SparkSession] = None,
-    num_partitions: _Optional[int] = None,
     **kwargs,
 ) -> _PsmDataset:
     """
@@ -56,10 +55,6 @@ def read_pythia_features(
         format.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
-    num_partitions: int (optional)
-        (Used only when reading HDF format)
-        The number of partitions the list of files should be split into for reading.
-        If unset (`None`), falls back to the Spark context's default.
 
     Any other keyword arguments are passed to `read_pythia_parquet`, or ignored if reading HDF.
 
@@ -73,75 +68,7 @@ def read_pythia_features(
 
     file_paths = [str(p) for p in _listify(location)]
 
-    num_hdf = len(
-        list(filter(lambda f: f.lower().endswith(".scored"), file_paths))
-    )
-    if num_hdf == 0:
-        return read_pythia_parquet(file_paths, spark=spark, **kwargs)
-    elif num_hdf != len(file_paths):
-        raise ValueError(
-            "Can't read a mix of formats! Only some locations ended in '.psm.scored'"
-        )
-    else:
-        return read_pythia_hdf(
-            file_paths, num_partitions=num_partitions, spark=spark, **kwargs
-        )
-
-
-def read_pythia_hdf(location, spark, num_partitions=None):
-    file_paths = location
-
-    # Distribute the file paths
-    files_rdd = spark.sparkContext.parallelize(
-        file_paths, numSlices=num_partitions
-    )
-
-    # Read the files in parallel and concatenate to one large RDD
-    psms_rdd = files_rdd.flatMap(read_pythia_scored_rows)
-
-    # Create the PySpark SQL DataFrame and assign a boolean "target" col
-    psms_df = spark.createDataFrame(psms_rdd).withColumn(
-        "target", _col("isDecoy") == 0
-    )
-
-    _logger.debug("Read dataframe with columns: %s", psms_df.columns)
-
-    # Allow for typo in Pythia
-    mean_abs_ppm_col = (
-        "meanAbsolueErrorPPM"
-        if "meanAbsolueErrorPPM" in psms_df.columns
-        else "meanAbsoluteErrorPPM"
-    )
-
-    return _PsmDataset(
-        psms_df,
-        target_column="target",
-        spectrum_columns=["filename", "scanNumber"],
-        score_columns=[
-            "cosine_similarity",
-            "klDivergence",
-            "Score",
-            "hyperscore",
-            "deltaScore",
-            "meanErrorPPM",
-            mean_abs_ppm_col,
-            "leftOverRawScanIntensity",
-            "extractedIonCount",
-            "aCount",
-            "bCount",
-            "yCount",
-            "b2Count",
-            "y2Count",
-            "yNH3Count",
-            "yH2OCount",
-            "bNH3Count",
-            "bH2OCount",
-            "scanRank",
-        ],
-        peptide_column="peptideId",
-        protein_column="fastaDescriptions",
-        protein_delim=";",
-    )
+    return read_pythia_parquet(file_paths, spark=spark, **kwargs)
 
 
 def read_pythia_parquet(
