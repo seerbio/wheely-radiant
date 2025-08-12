@@ -138,9 +138,10 @@ def read_pythia_hdf(location, spark, num_partitions=None):
             "bH2OCount",
             "scanRank",
         ],
-        peptide_column="peptideId",
+        peptide_column="peptideSequence",
         protein_column="fastaDescriptions",
         protein_delim=";",
+        charge_column="charge",
     )
 
 
