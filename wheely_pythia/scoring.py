@@ -4,6 +4,7 @@
 
 import logging as _logging
 import struct as _struct
+import sys as _sys
 from typing import (
     Dict as _Dict,
     Iterable as _Iterable,
@@ -12,7 +13,10 @@ from typing import (
 
 # Once the min supported version reaches 3.10, the standard library should
 # be used like so -> from importlib.metadata import entry_points
-from importlib_metadata import entry_points
+try:
+    from importlib.metadata import entry_points
+except ImportError:
+    from importlib_metadata import entry_points
 
 from pyspark.sql import Column as _Column, functions as _fns
 
