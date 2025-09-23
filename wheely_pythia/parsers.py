@@ -82,6 +82,8 @@ def read_pythia_parquet(
         ]
     ] = None,
     read_spectra: bool = False,
+    *_,
+    use_irt: bool = True,
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
@@ -107,6 +109,9 @@ def read_pythia_parquet(
     PsmDataset
         A :py:class:`wheely.mammoth.dataset.PsmDataset` object containing the parsed PSMs.
     """
+    if _:
+        raise TypeError("Unexpected positional arguments!")
+
     if not spark:
         spark = _SparkSession.builder.getOrCreate()
 
@@ -186,7 +191,11 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
-    col_semantics = _get_col_semantics(psms_df.columns, charge_col=charge_col)
+    col_semantics = _get_col_semantics(
+        psms_df.columns, charge_col=charge_col, use_irt=use_irt
+    )
+
+    _logger.debug("Using column semantics: %s", col_semantics)
 
     if read_spectra:
         return _PythiaSpectraDataset(
@@ -235,7 +244,7 @@ def _is_valid_peak(pk_col: _Column) -> _Column:
     return (pk_col.getItem(0) > 0) & (pk_col.getItem(1) > 0)
 
 
-def _get_col_semantics(columns, charge_col=None):
+def _get_col_semantics(columns, charge_col=None, use_irt=True):
     if "discriminateScore" not in columns:
         return dict(
             spectrum_columns=[
@@ -245,7 +254,11 @@ def _get_col_semantics(columns, charge_col=None):
                 "ScanNumber",
             ],
             charge_column=charge_col or "Charge",
-            rt_column="ScanTime",
+            rt_column=(
+                "IRTEmpirical"
+                if "IRTEmpirical" in columns and use_irt
+                else "ScanTime"
+            ),
             peptide_column="PeptideStringWithMods",
             protein_column="ProteinGroup",
         )
@@ -267,10 +280,15 @@ def _get_col_semantics(columns, charge_col=None):
 
 def read_pythia_spectra(
     psms: _PsmDataset,
+    use_irt: bool = True,
     **kwargs,
 ) -> _SpectraDataset:
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
+        col_semantics = _get_col_semantics(psms.data.columns, use_irt=use_irt)
+
+        _logger.debug("Using column semantics: %s", col_semantics)
+
         pass_thru_dset = _PythiaSpectraDataset(
             psms.data.withColumn(
                 "peaklist", parse_peaklist(psms.data.columns)
@@ -278,7 +296,7 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
-            **_get_col_semantics(psms.data.columns),
+            **col_semantics,
         )
         if all(
             c in pass_thru_dset.data.columns for c in pass_thru_dset.columns
