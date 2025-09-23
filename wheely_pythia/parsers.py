@@ -253,8 +253,8 @@ def _get_col_semantics(columns, charge_col=None, use_irt=True):
             ],
             charge_column=charge_col or "Charge",
             rt_column=(
-                "EmpiricalIRT"
-                if "EmpiricalIRT" in columns and use_irt
+                "IRTEmpirical"
+                if "IRTEmpirical" in columns and use_irt
                 else "ScanTime"
             ),
             peptide_column="PeptideStringWithMods",
