@@ -195,6 +195,8 @@ def read_pythia_parquet(
         psms_df.columns, charge_col=charge_col, use_irt=use_irt
     )
 
+    _logger.debug("Using column semantics: %s", col_semantics)
+
     if read_spectra:
         return _PythiaSpectraDataset(
             psms_df,
@@ -283,6 +285,10 @@ def read_pythia_spectra(
 ) -> _SpectraDataset:
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
+        col_semantics = _get_col_semantics(psms.data.columns, use_irt=use_irt)
+
+        _logger.debug("Using column semantics: %s", col_semantics)
+
         pass_thru_dset = _PythiaSpectraDataset(
             psms.data.withColumn(
                 "peaklist", parse_peaklist(psms.data.columns)
@@ -290,7 +296,7 @@ def read_pythia_spectra(
             target_column=psms.target_column,
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
-            **_get_col_semantics(psms.data.columns, use_irt=use_irt),
+            **col_semantics,
         )
         if all(
             c in pass_thru_dset.data.columns for c in pass_thru_dset.columns
