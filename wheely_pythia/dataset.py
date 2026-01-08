@@ -4,7 +4,10 @@ from typing import (
 )
 
 from wheely.mammoth import PsmDataset as _PsmDataset
-from wheely.mammoth.semantics import SemanticInfo as _SemanticInfo
+from wheely.mammoth.semantics import (
+    SemanticInfo as _SemanticInfo,
+    RT_IN_SECONDS as _RT_IN_SECONDS,
+)
 from wheely.mammoth.spectra.dataset import (
     PrecursorDatasetBase as _PrecursorDatasetBase,
     SpectraDatasetMixin as _SpectraDatasetMixin,
