@@ -8,7 +8,7 @@ import pandas as pd
 import pyspark.sql.functions
 import pytest
 
-from wheely.mammoth import ConfidenceDataset
+from wheely.mammoth.semantics import BasicSemantic
 
 from wheely_pythia import read_pythia_features
 from wheely_pythia.dataset import PythiaDataset, PythiaSpectraDataset
@@ -43,6 +43,17 @@ _dset_types = [PythiaDataset, PythiaSpectraDataset]
                 kwargs,
                 peaklist_column="__custom_peaklist",
             ),
+        ),
+        # Semantics variants
+        lambda psms, **kwargs: PythiaDataset(
+            psms,
+            **kwargs,
+            semantics={"test_col": BasicSemantic("Test semantic")},
+        ),
+        lambda psms, **kwargs: PythiaSpectraDataset(
+            psms,
+            **kwargs,
+            semantics={"test_col": BasicSemantic("Test semantic")},
         ),
     ]
 )
@@ -120,6 +131,18 @@ def test_properties(pythia_data, dataset_type):
         except Exception as e:
             raise AssertionError(f"Error testing {ca}/{a}") from e
 
+    # Check that semantics are properly initialized
+    assert hasattr(
+        psms, "semantics"
+    ), "Dataset should have 'semantics' attribute"
+    assert isinstance(psms.semantics, dict), "semantics should be a dict"
+
+    # For datasets with custom semantics in fixture:
+    if "test_col" in psms.semantics:
+        assert psms.semantics["test_col"] is not None
+        # Test get_semantics method
+        assert psms.get_semantics("test_col") == psms.semantics["test_col"]
+
     # Check that the dataset `columns` property is correct
     assert all(c is not None for c in psms.columns)
     assert set(psms.columns) == {
@@ -157,6 +180,7 @@ def test_mutate(pythia_data, dataset_type):
             "isDecoy", pyspark.sql.functions.col("target").astype("int") == 0
         ),
         target_column="isDecoy",
+        semantics={"isDecoy": BasicSemantic("decoy flag")},
     )
 
     assert isinstance(mut, type(psms))
@@ -171,6 +195,14 @@ def test_mutate(pythia_data, dataset_type):
         ).collect()[0][0]
         == n_rows - n_targets
     )
+
+    # Check that semantics are preserved through with_data()
+    assert hasattr(
+        mut, "semantics"
+    ), "Mutated dataset should have 'semantics' attribute"
+    assert (
+        mut.get_by_semantics(BasicSemantic("decoy flag")) == "isDecoy"
+    ), "Mutated dataset did not have mutated semantic"
 
     for k, v in cols.items():
         if k == "target_column":
