@@ -1,4 +1,10 @@
+from typing import (
+    Mapping as _Mapping,
+    Optional as _Optional,
+)
+
 from wheely.mammoth import PsmDataset as _PsmDataset
+from wheely.mammoth.semantics import SemanticInfo as _SemanticInfo
 from wheely.mammoth.spectra.dataset import (
     PrecursorDatasetBase as _PrecursorDatasetBase,
     SpectraDatasetMixin as _SpectraDatasetMixin,
@@ -18,6 +24,7 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
         protein_column,
         protein_delim=None,
         mz_column="mz",
+        semantics: _Optional[_Mapping[str, _SemanticInfo]] = None,
     ):
         _PsmDataset.__init__(
             self,
@@ -29,6 +36,7 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
             charge_column=charge_column,
             protein_column=protein_column,
             protein_delim=protein_delim,
+            semantics=semantics,
         )
         _PrecursorDatasetBase.__init__(
             self,
@@ -37,6 +45,7 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
             charge_column,
             mz_column,
             rt_column,
+            semantics=semantics,
         )
 
     @property
@@ -85,6 +94,7 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
         protein_delim=None,
         mz_column="mz",
         peaklist_column="peaklist",
+        semantics: _Optional[_Mapping[str, _SemanticInfo]] = None,
     ):
         PythiaDataset.__init__(
             self,
@@ -98,6 +108,7 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
             protein_delim=protein_delim,
             charge_column=charge_column,
             mz_column=mz_column,
+            semantics=semantics,
         )
         _SpectraDatasetMixin.__init__(
             self,
