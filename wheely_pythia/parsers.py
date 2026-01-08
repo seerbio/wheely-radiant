@@ -25,7 +25,13 @@ from pyspark.sql.functions import (
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
 from wheely.mammoth.semantics import (
+    NORMALIZED_RT_IN_SECONDS as _NORMALIZED_RT_IN_SECONDS,
     RT_IN_SECONDS as _RT_IN_SECONDS,
+    RT_START_IN_SECONDS as _RT_START_IN_SECONDS,
+    RT_STOP_IN_SECONDS as _RT_STOP_IN_SECONDS,
+    SCAN_NUMBER as _SCAN_NUMBER,
+    THEORETICAL_MONO_MASS as _THEORETICAL_MONO_MASS,
+    THEORETICAL_PRECURSOR_MZ as _THEORETICAL_PRECURSOR_MZ,
 )
 from wheely.mammoth.utils import listify as _listify
 from wheely.mammoth.spectra import SpectraDataset as _SpectraDataset
@@ -200,7 +206,7 @@ def read_pythia_parquet(
 
     semantics = dict(
         semantics or {},
-        mz=THEORETICAL_PRECURSOR_MZ,
+        mz=_THEORETICAL_PRECURSOR_MZ,
     )
 
     _logger.debug("Using column semantics: %s", col_semantics)
@@ -275,12 +281,12 @@ def _get_col_semantics(columns, charge_col=None, use_irt=True):
                 protein_column="ProteinGroup",
             ),
             {
-                "ScanNumber": SCAN_NUMBER,
+                "ScanNumber": _SCAN_NUMBER,
                 "ScanTime": _RT_IN_SECONDS,
-                "ScanTimeStart": RT_START_IN_SECONDS,
-                "ScanTimeEnd": RT_STOP_IN_SECONDS,
-                "IRTEmpirical": RT_NORMALIZED,
-                "Mass": THEORETICAL_MONO_MASS,
+                "ScanTimeStart": _RT_START_IN_SECONDS,
+                "ScanTimeEnd": _RT_STOP_IN_SECONDS,
+                "IRTEmpirical": _NORMALIZED_RT_IN_SECONDS,
+                "Mass": _THEORETICAL_MONO_MASS,
             },
         )
     else:
