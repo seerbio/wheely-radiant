@@ -45,6 +45,7 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
             charge_column,
             mz_column,
             rt_column,
+            semantics=semantics,
         )
 
     @property
