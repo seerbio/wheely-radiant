@@ -24,6 +24,15 @@ from pyspark.sql.functions import (
     lit as _lit,
 )
 from wheely.mammoth import PsmDataset as _PsmDataset
+from wheely.mammoth.semantics import (
+    NORMALIZED_RT_IN_SECONDS as _NORMALIZED_RT_IN_SECONDS,
+    RT_IN_SECONDS as _RT_IN_SECONDS,
+    RT_START_IN_SECONDS as _RT_START_IN_SECONDS,
+    RT_STOP_IN_SECONDS as _RT_STOP_IN_SECONDS,
+    SCAN_NUMBER as _SCAN_NUMBER,
+    THEORETICAL_MONO_MASS as _THEORETICAL_MONO_MASS,
+    THEORETICAL_PRECURSOR_MZ as _THEORETICAL_PRECURSOR_MZ,
+)
 from wheely.mammoth.utils import listify as _listify
 from wheely.mammoth.spectra import SpectraDataset as _SpectraDataset
 from wheely.mammoth.spectra.utils import (
@@ -191,11 +200,17 @@ def read_pythia_parquet(
         *(c for c in psms_df.columns if c not in scoring and c.endswith("Vec"))
     )
 
-    col_semantics = _get_col_semantics(
+    col_semantics, semantics = _get_col_semantics(
         psms_df.columns, charge_col=charge_col, use_irt=use_irt
     )
 
+    semantics = dict(
+        semantics or {},
+        mz=_THEORETICAL_PRECURSOR_MZ,
+    )
+
     _logger.debug("Using column semantics: %s", col_semantics)
+    _logger.debug("Additional semantic tags: %s", semantics)
 
     if read_spectra:
         return _PythiaSpectraDataset(
@@ -204,6 +219,7 @@ def read_pythia_parquet(
             score_columns=scoring,
             **col_semantics,
             protein_delim=";",
+            semantics=semantics,
         )
     else:
         return _PythiaDataset(
@@ -212,6 +228,7 @@ def read_pythia_parquet(
             score_columns=scoring,
             **col_semantics,
             protein_delim=";",
+            semantics=semantics,
         )
 
 
@@ -246,35 +263,48 @@ def _is_valid_peak(pk_col: _Column) -> _Column:
 
 def _get_col_semantics(columns, charge_col=None, use_irt=True):
     if "discriminateScore" not in columns:
-        return dict(
-            spectrum_columns=[
-                "filename",
-                "PeptideStringWithMods",
-                "Charge",
-                "ScanNumber",
-            ],
-            charge_column=charge_col or "Charge",
-            rt_column=(
-                "IRTEmpirical"
-                if "IRTEmpirical" in columns and use_irt
-                else "ScanTime"
+        return (
+            dict(
+                spectrum_columns=[
+                    "filename",
+                    "PeptideStringWithMods",
+                    "Charge",
+                    "ScanNumber",
+                ],
+                charge_column=charge_col or "Charge",
+                rt_column=(
+                    "IRTEmpirical"
+                    if "IRTEmpirical" in columns and use_irt
+                    else "ScanTime"
+                ),
+                peptide_column="PeptideStringWithMods",
+                protein_column="ProteinGroup",
             ),
-            peptide_column="PeptideStringWithMods",
-            protein_column="ProteinGroup",
+            {
+                "ScanNumber": _SCAN_NUMBER,
+                "ScanTime": _RT_IN_SECONDS,
+                "ScanTimeStart": _RT_START_IN_SECONDS,
+                "ScanTimeEnd": _RT_STOP_IN_SECONDS,
+                "IRTEmpirical": _NORMALIZED_RT_IN_SECONDS,
+                "Mass": _THEORETICAL_MONO_MASS,
+            },
         )
     else:
         # Support legacy files with deprecated column names
-        return dict(
-            spectrum_columns=[
-                "filename",
-                "peptideStringWithMods",
-                "charge",
-                "scanNumber",
-            ],
-            charge_column=charge_col or "charge",
-            rt_column="scanTime",
-            peptide_column="peptideStringWithMods",
-            protein_column="proteinGroup",
+        return (
+            dict(
+                spectrum_columns=[
+                    "filename",
+                    "peptideStringWithMods",
+                    "charge",
+                    "scanNumber",
+                ],
+                charge_column=charge_col or "charge",
+                rt_column="scanTime",
+                peptide_column="peptideStringWithMods",
+                protein_column="proteinGroup",
+            ),
+            None,
         )
 
 
@@ -285,9 +315,12 @@ def read_pythia_spectra(
 ) -> _SpectraDataset:
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
-        col_semantics = _get_col_semantics(psms.data.columns, use_irt=use_irt)
+        col_semantics, semantics = _get_col_semantics(
+            psms.data.columns, use_irt=use_irt
+        )
 
         _logger.debug("Using column semantics: %s", col_semantics)
+        _logger.debug("Additional semantic tags: %s", semantics)
 
         pass_thru_dset = _PythiaSpectraDataset(
             psms.data.withColumn(
@@ -297,6 +330,7 @@ def read_pythia_spectra(
             score_columns=psms.score_columns,
             protein_delim=psms.protein_delim,
             **col_semantics,
+            semantics=semantics,
         )
         if all(
             c in pass_thru_dset.data.columns for c in pass_thru_dset.columns
