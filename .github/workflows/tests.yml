@@ -29,7 +29,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install flake8 wheel
         aws codeartifact login --tool pip --repository seer_ds --domain seer --domain-owner 718843040700 --region us-west-2
-        pip install '.[dev,hdf]'
+        pip install '.[dev]'
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names

@@ -1,5 +1,5 @@
 """
-`wheely_pythia.scoring` -- different scoring schemes for use with PythiaDIA
+`wheely_radiant.scoring` -- different scoring schemes for use with Radiant DIA
 """
 
 import logging as _logging
@@ -23,24 +23,24 @@ from pyspark.sql import Column as _Column, functions as _fns
 _logger = _logging.getLogger(__name__)
 
 
-def pythia_scores_default(*columns) -> _List[str]:
+def radiant_scores_default(*columns) -> _List[str]:
     """
     Returns
     -------
-    The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
+    The default set of score columns from Radiant DIA, excluding the output of its NN
     classifier.
     """
-    return pythia_scores_default_v1(*columns)
+    return radiant_scores_default_v1(*columns)
 
 
-def pythia_scores_default_v1(*columns) -> _List[str]:
+def radiant_scores_default_v1(*columns) -> _List[str]:
     """
     Returns
     -------
-    The default set of score columns from Pythia v1.0 and later, excluding the output of its NN
+    The default set of score columns from Radiant DIA, excluding the output of its NN
     classifier.
     """
-    pythia_scores = [
+    radiant_scores = [
         "DiscriminantScore",  # Moved to first, as this is the "primary" score
         "AllignedMaxIndexesCount",
         "AltTargetKeyIdCosineSimSumCharge1_1",
@@ -306,10 +306,10 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         "TotalIntensityRaw",
     ]
 
-    _missing = set(pythia_scores) - set(columns)
-    if len(_missing) == len(pythia_scores):
+    _missing = set(radiant_scores) - set(columns)
+    if len(_missing) == len(radiant_scores):
         raise ValueError(
-            f"Could not find any of the columns {pythia_scores} in {columns}"
+            f"Could not find any of the columns {radiant_scores} in {columns}"
         )
     elif len(_missing) > 0:
         _logger.warning(
@@ -318,51 +318,51 @@ def pythia_scores_default_v1(*columns) -> _List[str]:
         )
 
     # Preserve ordering of scores
-    pythia_scores = [c for c in pythia_scores if c in columns]
+    radiant_scores = [c for c in radiant_scores if c in columns]
 
-    return pythia_scores
+    return radiant_scores
 
 
-def pythia_score_classifier(*columns) -> str:
+def radiant_score_classifier(*columns) -> str:
     """
     Returns
     -------
-    The name of Pythia's NN classifier score column (v1.0 and later).
+    The name of Radiant DIA's NN classifier score column.
     """
-    return pythia_score_classifier_v1(*columns)
+    return radiant_score_classifier_v1(*columns)
 
 
-def pythia_score_classifier_v1(*columns) -> str:
+def radiant_score_classifier_v1(*columns) -> str:
     """
     Returns
     -------
-    The name of Pythia's NN classifier score column (v1.0 and later).
+    The name of Radiant DIA's NN classifier score column.
     """
     return "ClassifierScore"
 
 
-def pythia_scores_svm(*columns) -> _Dict[str, _Column]:
+def radiant_scores_svm(*columns) -> _Dict[str, _Column]:
     """
-    Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA v1.0 and later results.
+    Create a set of scores particularly suited to applying SVM rescoring.
 
     Returns
     -------
     A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
     """
 
-    return pythia_scores_svm_v1(*columns)
+    return radiant_scores_svm_v1(*columns)
 
 
-def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
+def radiant_scores_svm_v1(*columns) -> _Dict[str, _Column]:
     """
-    Create a set of scores particularly suited to applying SVM rescoring to PythiaDIA v1.0 and later results.
+    Create a set of scores particularly suited to applying SVM rescoring to Radiant DIA results.
 
     Returns
     -------
     A dict mapping column name to a PySpark column, representing the computation of individual scoring features.
     """
     # Take a list of all known scores; comment out those that aren't directly usable
-    pythia_scores = [
+    radiant_scores = [
         "DiscriminantScore",  # Moved to first, as this is the "primary" score
         "AllignedMaxIndexesCount",
         "AltTargetKeyIdCosineSimSumCharge1_1",
@@ -629,10 +629,10 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         "TotalIntensityRaw",
     ]
 
-    _missing = set(pythia_scores) - set(columns)
-    if len(_missing) == len(pythia_scores):
+    _missing = set(radiant_scores) - set(columns)
+    if len(_missing) == len(radiant_scores):
         raise ValueError(
-            f"Could not find any of the columns {pythia_scores} in {columns}"
+            f"Could not find any of the columns {radiant_scores} in {columns}"
         )
     elif len(_missing) > 0:
         _logger.warning(
@@ -641,7 +641,7 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         )
 
     # Preserve ordering of scores
-    pythia_scores = [c for c in pythia_scores if c in columns]
+    radiant_scores = [c for c in radiant_scores if c in columns]
 
     # Now we construct additional scores from some
     # columns that we don't use directly
@@ -702,15 +702,15 @@ def pythia_scores_svm_v1(*columns) -> _Dict[str, _Column]:
         )
 
     return {
-        **{c: _fns.col(c) for c in pythia_scores},
+        **{c: _fns.col(c) for c in radiant_scores},
         **addl_scores,
     }
 
 
 _schemes = {
-    "default": pythia_scores_default,
-    "nn": pythia_score_classifier,
-    "svm": pythia_scores_svm,
+    "default": radiant_scores_default,
+    "nn": radiant_score_classifier,
+    "svm": radiant_scores_svm,
 }
 _plugins = None
 
@@ -734,7 +734,7 @@ def register_scheme(name, scheme, clobber=False):
 def _get_plugins():
     """Return a dict of all installed Plugins as {name: scheme}."""
 
-    plugins = entry_points(group="wheely_pythia.scoring.plugins")
+    plugins = entry_points(group="wheely_radiant.scoring.plugins")
 
     pluginmap = {}
     for plugin in plugins:

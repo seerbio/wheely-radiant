@@ -14,7 +14,7 @@ from wheely.mammoth.spectra.dataset import (
 )
 
 
-class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
+class RadiantDataset(_PsmDataset, _PrecursorDatasetBase):
     def __init__(
         self,
         psms,
@@ -83,7 +83,7 @@ class PythiaDataset(_PsmDataset, _PrecursorDatasetBase):
         )
 
 
-class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
+class RadiantSpectraDataset(RadiantDataset, _SpectraDatasetMixin):
     def __init__(
         self,
         psms,
@@ -99,7 +99,7 @@ class PythiaSpectraDataset(PythiaDataset, _SpectraDatasetMixin):
         peaklist_column="peaklist",
         semantics: _Optional[_Mapping[str, _SemanticInfo]] = None,
     ):
-        PythiaDataset.__init__(
+        RadiantDataset.__init__(
             self,
             psms=psms,
             target_column=target_column,

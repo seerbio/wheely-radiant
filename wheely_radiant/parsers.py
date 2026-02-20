@@ -1,5 +1,5 @@
 """
-`parsers`: module for Pythia results parsing functions
+`parsers`: module for results parsing functions
 """
 
 import logging as _logging
@@ -40,32 +40,30 @@ from wheely.mammoth.spectra.utils import (
 )
 
 from .dataset import (
-    PythiaDataset as _PythiaDataset,
-    PythiaSpectraDataset as _PythiaSpectraDataset,
+    RadiantDataset as _RadiantDataset,
+    RadiantSpectraDataset as _RadiantSpectraDataset,
 )
 from .scoring import get_scheme as _get_scoring_scheme
 
 _logger = _logging.getLogger(__name__)
 
 
-def read_pythia_features(
+def read_radiant_features(
     location,
     spark: _Optional[_SparkSession] = None,
     **kwargs,
 ) -> _PsmDataset:
     """
-    Read scored PSMs from Pythia `.psm.scored` files.
+    Read scored PSMs from Radiant DIA results files.
 
     Parameters
     ----------
     location : str or tuple of str
-        Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format, or
-        `.scored` (HDF) format (to be deprecated). Note: all file paths must be in the same
-        format.
+        Paths or URIs specifying a collection of PSMs in ``.radiantDIA`` format.
     spark : :py:class:`pyspark.sql.SparkSession` (optional)
         If `None`, creates a default session.
 
-    Any other keyword arguments are passed to `read_pythia_parquet`, or ignored if reading HDF.
+    Any other keyword arguments are passed to :py:func:`read_radiant_parquet`, or ignored if reading HDF.
 
     Returns
     -------
@@ -77,10 +75,10 @@ def read_pythia_features(
 
     file_paths = [str(p) for p in _listify(location)]
 
-    return read_pythia_parquet(file_paths, spark=spark, **kwargs)
+    return read_radiant_parquet(file_paths, spark=spark, **kwargs)
 
 
-def read_pythia_parquet(
+def read_radiant_parquet(
     location,
     scoring: _Optional[
         _Union[
@@ -96,17 +94,17 @@ def read_pythia_parquet(
     spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
-    Read scored PSMs from Pythia `.pythiaDIA` files.
+    Read scored PSMs from `.radiantDIA` files.
 
     Parameters
     ----------
     location : str or iterable of str
-        Paths or URIs specifying a collection of PSMs in Pythia's `.prq.pythiaDIA` format.
-    scoring : str, list of str, dict of `{name: pyspark.sql.Column}`, or `callable` specifying the
-              `score_columns` of the returned dataset. See also `pythia_scores_default()` and
-              `pythia_scores_svm()` which return collections compatible with this parameter. If a
-              str, it will be treated as the name of a registered scoring scheme (see
-              `wheely_pythia.scoring`), or if no such scheme exists, the name of a single column.
+        Paths or URIs specifying a collection of PSMs in `.radiantDIA` format.
+    scoring : str, list of str, dict of ``{name: pyspark.sql.Column}``, or ``callable`` specifying the
+              ``score_columns`` of the returned dataset. See also ``radiant_scores_default()`` and
+              ``radiant_scores_svm()`` which return collections compatible with this parameter. If a
+              ``str``, it will be treated as the name of a registered scoring scheme (see
+              :py:mod:`wheely_radiant.scoring`), or if no such scheme exists, the name of a single column.
               An error will occur if no matches are found in the scheme registry or in the specified
               files. If a callable, it must accept a set of column names as positional arguments and
               return a suitable value.
@@ -213,7 +211,7 @@ def read_pythia_parquet(
     _logger.debug("Additional semantic tags: %s", semantics)
 
     if read_spectra:
-        return _PythiaSpectraDataset(
+        return _RadiantSpectraDataset(
             psms_df,
             target_column="target",
             score_columns=scoring,
@@ -222,7 +220,7 @@ def read_pythia_parquet(
             semantics=semantics,
         )
     else:
-        return _PythiaDataset(
+        return _RadiantDataset(
             psms_df,
             target_column="target",
             score_columns=scoring,
@@ -308,7 +306,7 @@ def _get_col_semantics(columns, charge_col=None, use_irt=True):
         )
 
 
-def read_pythia_spectra(
+def read_radiant_spectra(
     psms: _PsmDataset,
     use_irt: bool = True,
     **kwargs,
@@ -322,7 +320,7 @@ def read_pythia_spectra(
         _logger.debug("Using column semantics: %s", col_semantics)
         _logger.debug("Additional semantic tags: %s", semantics)
 
-        pass_thru_dset = _PythiaSpectraDataset(
+        pass_thru_dset = _RadiantSpectraDataset(
             psms.data.withColumn(
                 "peaklist", parse_peaklist(psms.data.columns)
             ),
@@ -335,12 +333,12 @@ def read_pythia_spectra(
         if all(
             c in pass_thru_dset.data.columns for c in pass_thru_dset.columns
         ):
-            _logger.info("Using pass-through spectra from Pythia")
+            _logger.info("Using pass-through spectra from Radiant")
             return pass_thru_dset
 
     assert (
         "filename" in psms.data.columns
-    ), "Did not find `filename` column for reading Pythia spectra!"
+    ), "Did not find `filename` column for reading Radiant spectra!"
 
     location = (
         psms.data.select(_col("filename").alias("__location"))
@@ -350,55 +348,15 @@ def read_pythia_spectra(
     )
 
     _logger.info(
-        f"Reading Pythia spectra from {len(location)} location(s): {location[:3]}{'…' if len(location) > 3 else ''}"
+        f"Reading Radiant spectra from {len(location)} location(s): {location[:3]}{'…' if len(location) > 3 else ''}"
     )
 
     return _cast(
         _SpectraDataset,
-        read_pythia_features(
+        read_radiant_features(
             location,
             spark=psms.data.sparkSession,
             read_spectra=True,
             **kwargs,
         ),
     )
-
-
-def read_pythia_scored_rows(path) -> iter:
-    """
-    Read a single Pythia `.scored` file and return an iterator over its rows.
-    Suitable for e.g. flat mapping with Spark over an RDD of file paths.
-    """
-    return read_pythia_scored_file(path).itertuples()
-
-
-def read_pythia_scored_file(path) -> _pd.DataFrame:
-    """
-    Read a single Pythia `.scored` file as a :py:class:`pandas.DataFrame`
-    """
-    # Optional dependency; only import if we know we need to use it
-    import h5py as _h5
-
-    with _h5.File(path, "r") as f:
-        df = _pd.DataFrame(f["psmResultsScoredDataset"][()])
-
-    df["fastaDescriptions"] = df["fastaDescriptions"].str.decode("utf-8")
-
-    df["peptideSequence"] = df["peptideSequence"].str.decode("utf-8")
-
-    df["modificationString"] = df["modificationString"].str.decode("utf-8")
-
-    previous_residue: str = (
-        df["previousResidue"].values.tobytes().decode("utf-8")
-    )
-
-    df["previousResidue"] = [*previous_residue]
-
-    post_residue: str = df["postResidue"].values.tobytes().decode("utf-8")
-    df["postResidue"] = [*post_residue]
-
-    df["peptideLength"] = df.peptideSequence.str.len()
-
-    df["filename"] = path
-
-    return df

@@ -34,10 +34,10 @@ def spark_session(request):
 
 @pytest.fixture(
     params=[
-        "data/1.mzML.subset.v1.prqFF.pythiaDIA",
-        "data/EXP22092_2022ms0742X32_A.raw.mzML_trunc.prqFF.pythiaDIA",
+        "data/1.mzML.subset.v1.prqFF.radiantDIA",
+        "data/EXP22092_2022ms0742X32_A.raw.mzML_trunc.prqFF.radiantDIA",
     ]
 )
-def pythia_features(request):
-    """Return the path of a Parquet (DIA) PSM file from Pythia"""
+def radiant_features(request):
+    """Return the path of a Parquet (DIA) PSM file"""
     return Path(request.param)
