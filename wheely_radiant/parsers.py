@@ -51,35 +51,7 @@ _logger = _logging.getLogger(__name__)
 def read_radiant_features(
     location,
     spark: _Optional[_SparkSession] = None,
-    **kwargs,
-) -> _PsmDataset:
-    """
-    Read scored PSMs from Radiant DIA results files.
-
-    Parameters
-    ----------
-    location : str or tuple of str
-        Paths or URIs specifying a collection of PSMs in ``.radiantDIA`` format.
-    spark : :py:class:`pyspark.sql.SparkSession` (optional)
-        If `None`, creates a default session.
-
-    Any other keyword arguments are passed to :py:func:`read_radiant_parquet`, or ignored if reading HDF.
-
-    Returns
-    -------
-    PsmDataset
-        A :py:class:`wheely.mammoth.dataset.PsmDataset` object containing the parsed PSMs.
-    """
-    if not spark:
-        spark = _SparkSession.builder.getOrCreate()
-
-    file_paths = [str(p) for p in _listify(location)]
-
-    return read_radiant_parquet(file_paths, spark=spark, **kwargs)
-
-
-def read_radiant_parquet(
-    location,
+    *_,
     scoring: _Optional[
         _Union[
             str,
@@ -89,9 +61,7 @@ def read_radiant_parquet(
         ]
     ] = None,
     read_spectra: bool = False,
-    *_,
     use_irt: bool = True,
-    spark: _Optional[_SparkSession] = None,
 ) -> _PsmDataset:
     """
     Read scored PSMs from `.radiantDIA` files.
@@ -100,6 +70,8 @@ def read_radiant_parquet(
     ----------
     location : str or iterable of str
         Paths or URIs specifying a collection of PSMs in `.radiantDIA` format.
+    spark : :py:class:`pyspark.sql.SparkSession` (optional)
+        If `None`, creates a default session.
     scoring : str, list of str, dict of ``{name: pyspark.sql.Column}``, or ``callable`` specifying the
               ``score_columns`` of the returned dataset. See also ``radiant_scores_default()`` and
               ``radiant_scores_svm()`` which return collections compatible with this parameter. If a
@@ -108,8 +80,13 @@ def read_radiant_parquet(
               An error will occur if no matches are found in the scheme registry or in the specified
               files. If a callable, it must accept a set of column names as positional arguments and
               return a suitable value.
-    spark : :py:class:`pyspark.sql.SparkSession` (optional)
-        If `None`, creates a default session.
+    read_spectra : bool
+        If ``True``, include spectral information in the returned dataset and return a
+        :py:class:`wheely.mammoth.spectra.SpectraDataset`.
+    use_irt : bool
+        If ``True``, the returned dataset will use empirical IRT values for the retention time column, ensuring that RTs
+        across multiple files are well-aligned to a consistent RT space. Otherwise, the measured retention time in each
+        file will be used directly.
 
     Returns
     -------
