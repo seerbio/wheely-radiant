@@ -10,10 +10,10 @@ import pytest
 
 from wheely.mammoth.semantics import BasicSemantic
 
-from wheely_pythia import read_pythia_features
-from wheely_pythia.dataset import PythiaDataset, PythiaSpectraDataset
+from wheely_radiant import read_radiant_features
+from wheely_radiant.dataset import RadiantDataset, RadiantSpectraDataset
 
-_dset_types = [PythiaDataset, PythiaSpectraDataset]
+_dset_types = [RadiantDataset, RadiantSpectraDataset]
 
 
 @pytest.fixture(
@@ -35,7 +35,7 @@ _dset_types = [PythiaDataset, PythiaSpectraDataset]
             for typ in _dset_types
         ],
         # Test that non-default peaklist column name is supported
-        lambda psms, **kwargs: PythiaSpectraDataset(
+        lambda psms, **kwargs: RadiantSpectraDataset(
             psms.withColumnRenamed(
                 kwargs.get("peaklist_column", "peaklist"), "__custom_peaklist"
             ).drop(kwargs.get("peaklist_column", "peaklist")),
@@ -45,12 +45,12 @@ _dset_types = [PythiaDataset, PythiaSpectraDataset]
             ),
         ),
         # Semantics variants
-        lambda psms, **kwargs: PythiaDataset(
+        lambda psms, **kwargs: RadiantDataset(
             psms,
             **kwargs,
             semantics={"test_col": BasicSemantic("Test semantic")},
         ),
-        lambda psms, **kwargs: PythiaSpectraDataset(
+        lambda psms, **kwargs: RadiantSpectraDataset(
             psms,
             **kwargs,
             semantics={"test_col": BasicSemantic("Test semantic")},
@@ -62,10 +62,10 @@ def dataset_type(request):
 
 
 @pytest.fixture
-def pythia_data(pythia_features):
+def radiant_data(radiant_features):
     # Must pass read_spectra=True just in case we then try to instantiate a SpectraDataset.
     # Note that the returned class here is irrelevant, we just want the DataFrame and col. names.
-    dset = read_pythia_features(pythia_features, read_spectra=True)
+    dset = read_radiant_features(radiant_features, read_spectra=True)
 
     return (
         dset.data,
@@ -97,12 +97,12 @@ def _drop_quotes(maybe_quoted):
     return match.group(1) if match else maybe_quoted
 
 
-def test_properties(pythia_data, dataset_type):
+def test_properties(radiant_data, dataset_type):
     """Check the public properties of the PsmDataset object."""
-    pythia_df, cols = pythia_data
+    radiant_df, cols = radiant_data
 
     psms = dataset_type(
-        psms=pythia_df,
+        psms=radiant_df,
         **cols,
     )
 
@@ -111,7 +111,7 @@ def test_properties(pythia_data, dataset_type):
 
     pd.testing.assert_frame_equal(
         psms.data.select(psms.targets).toPandas(),
-        pythia_df.toPandas().loc[:, ["target"]],
+        radiant_df.toPandas().loc[:, ["target"]],
     )
 
     # Check that optional columns' properties are correctly handled
@@ -163,12 +163,12 @@ def test_properties(pythia_data, dataset_type):
         )
 
 
-def test_mutate(pythia_data, dataset_type):
+def test_mutate(radiant_data, dataset_type):
     """Check mutating a PsmDataset object."""
-    pythia_df, cols = pythia_data
+    radiant_df, cols = radiant_data
 
     psms = dataset_type(
-        psms=pythia_df,
+        psms=radiant_df,
         **cols,
     )
 

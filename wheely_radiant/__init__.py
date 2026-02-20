@@ -1,11 +1,11 @@
-"""`wheely-pythia`: Pythia results reader"""
+"""`wheely-radiant`: Radiant DIA results reader"""
 
-# Initialize the wheely-pythia package.
+# Initialize the wheely-radiant package.
 try:
     from importlib.metadata import version, PackageNotFoundError
 
     try:
-        __version__ = version("wheely-pythia")
+        __version__ = version("wheely-radiant")
     except PackageNotFoundError:
         pass
 
@@ -13,16 +13,16 @@ except ImportError:
     from pkg_resources import get_distribution, DistributionNotFound
 
     try:
-        __version__ = get_distribution("wheely-pythia").version
+        __version__ = get_distribution("wheely-radiant").version
     except DistributionNotFound:
         pass
 
 # Here is where we can export public functions and classes.
 
-from .parsers import read_pythia_features
+from .parsers import read_radiant_features
 
 from .scoring import (
-    pythia_scores_default,
-    pythia_score_classifier,
-    pythia_scores_svm,
+    radiant_scores_default,
+    radiant_score_classifier,
+    radiant_scores_svm,
 )

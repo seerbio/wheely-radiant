@@ -10,8 +10,8 @@ import pytest
 from wheely.mammoth import PsmDataset
 from wheely.mammoth.spectra import SpectraDataset
 
-from wheely_pythia.scoring import _schemes
-from wheely_pythia.parsers import *
+from wheely_radiant.scoring import _schemes
+from wheely_radiant.parsers import *
 
 
 @pytest.mark.parametrize(
@@ -26,16 +26,16 @@ from wheely_pythia.parsers import *
     "read_spectra",
     [True, False],
 )
-def test_read_pythia_features(
-    caplog, spark_session, pythia_features, score_cols, read_spectra
+def test_read_features(
+    caplog, spark_session, radiant_features, score_cols, read_spectra
 ):
     """Test that we parse DIA scoring feature (parquet) files correctly"""
     caplog.set_level(logging.CRITICAL)  # we only want to capture logs later on
 
     n = 256  # Expected PSM (row) count
 
-    psms = read_pythia_features(
-        pythia_features,
+    psms = read_radiant_features(
+        radiant_features,
         spark_session,
         scoring=score_cols,
         read_spectra=read_spectra,
@@ -143,12 +143,12 @@ def test_read_pythia_features(
     # downstream modules that can't handle structured datatypes.
     if "discriminateScore" not in psms.data.columns:
         with caplog.at_level(logging.INFO):
-            spectra_dset = read_pythia_spectra(psms)
+            spectra_dset = read_radiant_spectra(psms)
             assert (
                 "pass-thr" in caplog.text
             ), "Did not find log message confirming spectra pass-through!"
             assert (
-                "Reading Pythia spectra" not in caplog.text
+                "Reading Radiant spectra" not in caplog.text
             ), "Found log message confirming spectra are re-read!"
 
             # Check for invalid peaks
