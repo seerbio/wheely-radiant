@@ -39,7 +39,7 @@ jobs:
       id-token: write
     environment:
       name: pypi
-      url: https://pypi.org/p/wheely-mammoth
+      url: https://pypi.org/p/wheely-radiant
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
