@@ -449,9 +449,9 @@ def _add_refined_intensity_column(
                 ),
             ),
             _fns.coalesce(
-                _column_ref(f"IntensityFoundMax{idx}", qualifier="dataset").cast(
-                    "double"
-                ),
+                _column_ref(
+                    f"IntensityFoundMax{idx}", qualifier="dataset"
+                ).cast("double"),
                 _fns.lit(0.0),
             ),
         ).otherwise(_fns.lit(0.0))
