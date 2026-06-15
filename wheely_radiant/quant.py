@@ -505,10 +505,10 @@ def _wrap_intensity_dataset(
         protein_column=dset.protein_column,
         protein_delim=dset.protein_delim,
         semantics=dict(
-            {
+            dset.semantics,
+            **{
                 intensity_column: _XIC_AREA,
             },
-            **dset.semantics,
         ),
     )
 
