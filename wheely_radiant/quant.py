@@ -323,10 +323,6 @@ def _compute_transition_statistics(
             ).alias("times_found"),
             transition_score.alias(_TRANSITION_SCORE_COLUMN),
             _fns.mean(_FRAGMENT_INTENSITY_COLUMN).alias("MeanIntensity"),
-            (
-                _fns.stddev(_FRAGMENT_INTENSITY_COLUMN)
-                / _fns.mean(_FRAGMENT_INTENSITY_COLUMN)
-            ).alias("TotalIntensityCV"),
         )
         .filter(_fns.col("times_found") > 0)
         .withColumn(
@@ -452,8 +448,11 @@ def _add_refined_intensity_column(
                     "double"
                 ),
             ),
-            _column_ref(f"IntensityFoundMax{idx}", qualifier="dataset").cast(
-                "double"
+            _fns.coalesce(
+                _column_ref(f"IntensityFoundMax{idx}", qualifier="dataset").cast(
+                    "double"
+                ),
+                _fns.lit(0.0),
             ),
         ).otherwise(_fns.lit(0.0))
         for idx in range(1, num_fragments + 1)
@@ -527,6 +526,10 @@ def _apply_normalization(dset, normalization):
 
     if isinstance(normalization, _Mapping):
         normalization = dict(normalization)
+        if "backend" not in normalization:
+            raise ValueError(
+                "normalization mapping must include a 'backend' key"
+            )
         norm_backend = normalization.pop("backend")
     else:
         norm_backend = normalization
