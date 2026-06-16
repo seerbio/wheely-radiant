@@ -20,6 +20,7 @@ except ImportError:
 # Here is where we can export public functions and classes.
 
 from .parsers import read_radiant_features
+from .quant import quantify_radiant
 
 from .scoring import (
     radiant_scores_default,

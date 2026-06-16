@@ -70,8 +70,9 @@ def test_read_features(
     # Check for columns missing in the dataframe
     assert not [col for col in psms.columns if col not in psms.data.columns]
 
+    score_df_columns = psms.scores.columns
     assert not [
-        col for col in psms.score_columns if col not in psms.scores.columns
+        col for col in psms.score_columns if col not in score_df_columns
     ]
     assert len(set(psms.score_columns)) == len(
         psms.score_columns
@@ -81,8 +82,9 @@ def test_read_features(
         assert "TotalIntensityLog" not in psms.score_columns
 
     assert psms.data.count() == n
+    spectra_df_columns = psms.spectra.columns
     assert not [
-        col for col in psms.spectrum_columns if col not in psms.spectra.columns
+        col for col in psms.spectrum_columns if col not in spectra_df_columns
     ]
     assert psms.protein_column is not None
 
