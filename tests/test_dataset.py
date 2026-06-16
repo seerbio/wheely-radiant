@@ -62,10 +62,12 @@ def dataset_type(request):
 
 
 @pytest.fixture
-def radiant_data(radiant_features):
+def radiant_data(radiant_features, spark_session):
     # Must pass read_spectra=True just in case we then try to instantiate a SpectraDataset.
     # Note that the returned class here is irrelevant, we just want the DataFrame and col. names.
-    dset = read_radiant_features(radiant_features, read_spectra=True)
+    dset = read_radiant_features(
+        radiant_features, spark_session, read_spectra=True
+    )
 
     return (
         dset.data,
@@ -111,7 +113,7 @@ def test_properties(radiant_data, dataset_type):
 
     pd.testing.assert_frame_equal(
         psms.data.select(psms.targets).toPandas(),
-        radiant_df.toPandas().loc[:, ["target"]],
+        radiant_df.select("target").toPandas(),
     )
 
     # Check that optional columns' properties are correctly handled
