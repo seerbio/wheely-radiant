@@ -150,6 +150,101 @@ def test_quantify_radiant_can_ignore_target_key(radiant_quant_dataset):
     }
 
 
+def test_quantify_radiant_can_fallback_to_raw(spark_session):
+    rows = [
+        dict(
+            sample="raw",
+            PeptideStringWithMods="RAWONLY",
+            Charge=2,
+            TargetKey="window_a",
+            target=True,
+            qvalue=0.50,
+            errprob=0.50,
+            score=1.0,
+            ProteinGroup="P1",
+            TotalIntensityRaw=123.0,
+            **_fragment_columns(
+                mzs=(100.0,),
+                scores=(0.90,),
+                intensities=(999.0,),
+            ),
+        ),
+        dict(
+            sample="match",
+            PeptideStringWithMods="REFINED",
+            Charge=2,
+            TargetKey="window_a",
+            target=True,
+            qvalue=0.001,
+            errprob=0.01,
+            score=10.0,
+            ProteinGroup="P1",
+            TotalIntensityRaw=111.0,
+            **_fragment_columns(
+                mzs=(100.0,),
+                scores=(0.90,),
+                intensities=(10.0,),
+            ),
+        ),
+        dict(
+            sample="no_match",
+            PeptideStringWithMods="REFINED",
+            Charge=2,
+            TargetKey="window_a",
+            target=True,
+            qvalue=0.50,
+            errprob=0.50,
+            score=1.0,
+            ProteinGroup="P1",
+            TotalIntensityRaw=456.0,
+            **_fragment_columns(
+                mzs=(200.0,),
+                scores=(0.10,),
+                intensities=(456.0,),
+            ),
+        ),
+    ]
+    dset = ConfidenceDataset(
+        spark_session.createDataFrame(rows),
+        target_column="target",
+        score_columns=["score"],
+        spectrum_columns=["sample"],
+        peptide_column="PeptideStringWithMods",
+        charge_column="Charge",
+        protein_column="ProteinGroup",
+        protein_delim=";",
+        qvalue_column="qvalue",
+        errprob_column="errprob",
+    )
+
+    quantified = quantify_radiant(
+        dset,
+        sample_column="sample",
+        fallback_to_raw=True,
+        num_fragments=1,
+    )
+
+    rows = {
+        row["sample"]: row.asDict()
+        for row in quantified.data.select(
+            "sample",
+            "radiant_intensity",
+            "radiant_fragments_found",
+            "radiant_num_refined_transitions",
+        ).collect()
+    }
+
+    assert rows["raw"]["radiant_intensity"] == pytest.approx(123.0)
+    assert rows["raw"]["radiant_fragments_found"] == 0
+    assert rows["raw"]["radiant_num_refined_transitions"] is None
+    assert rows["match"]["radiant_intensity"] == pytest.approx(10.0)
+    assert rows["match"]["radiant_fragments_found"] == 1
+    assert rows["match"]["radiant_num_refined_transitions"] == 1
+    assert rows["no_match"]["radiant_intensity"] is None
+    assert rows["no_match"]["radiant_fragments_found"] == 0
+    assert rows["no_match"]["radiant_num_refined_transitions"] == 1
+
+
 def test_quantify_radiant_warns_for_nonstandard_precursor_columns(
     spark_session,
     caplog,

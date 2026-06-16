@@ -33,6 +33,7 @@ _logger = _logging.getLogger(__name__)
 _STANDARD_PEPTIDE_COLUMN = "PeptideStringWithMods"
 _STANDARD_CHARGE_COLUMN = "Charge"
 _TARGET_KEY_COLUMN = "TargetKey"
+_RAW_INTENSITY_COLUMN = "TotalIntensityRaw"
 
 _FRAGMENT_MZ_COLUMN = "__radiant_fragment_mz"
 _FRAGMENT_SCORE_COLUMN = "__radiant_fragment_score"
@@ -52,11 +53,12 @@ def quantify_radiant(
     normalization: _Optional[
         _Union[str, _Callable, _Mapping[str, _Any]]
     ] = None,
-    include_target_key: bool = True,
     qvalue_threshold: _Optional[float] = 0.01,
     fragment_score_threshold: float = 0.8,
     min_transitions: int = 1,
     max_transitions: int = 3,
+    fallback_to_raw: bool = False,
+    include_target_key: bool = True,
     num_fragments: int = 12,
 ):
     """
@@ -70,13 +72,15 @@ def quantify_radiant(
     are learned at the precursor level from confident PSMs. Transitions are
     scored by summing fragment similarity values above ``fragment_score_threshold``
     across the confident rows, then ranked within each precursor by transition
-    score, mean fragment intensity, and fragment m/z.
+    score, mean fragment intensity, and fragment m/z (to break ties).
 
     Second, the selected transitions for each precursor are joined back to
     every PSM in the input dataset. The output intensity is the sum of
     ``IntensityFoundMax{i}`` values whose corresponding ``MzSearched{i}``
-    appears in the selected transition m/z set. Rows with no refined precursor
-    or no matching selected fragment receive a ``null`` intensity.
+    appears in the selected transition m/z set. Rows without sufficient refined
+    fragments receive a ``null`` intensity, unless ``fallback_to_raw`` is
+    ``True``, in which case the sum of all fragment intensities
+    (``TotalIntensityRaw``) is used instead.
 
     Parameters
     ----------
@@ -101,10 +105,6 @@ def quantify_radiant(
         using a local import only when normalization is requested. After
         normalization, the active intensity column is annotated as
         ``NORMALIZED_XIC_AREA``; otherwise it is annotated as ``XIC_AREA``.
-    include_target_key : bool, optional
-        Include Radiant ``TargetKey`` in the precursor key. This is the default
-        because the same peptide/charge can be observed in different isolation
-        windows. Set to ``False`` to refine transitions only by peptide and charge.
     qvalue_threshold : float or None, optional
         Confidence threshold used when learning transitions. When not ``None``,
         ``dset`` must be a ``ConfidenceDataset`` and only rows with
@@ -115,9 +115,25 @@ def quantify_radiant(
         observation to contribute to transition score and detection count.
     min_transitions : int, optional
         Minimum number of selected transitions required for a precursor to be
-        quantifiable.
+        quantifiable. Note: when ``fallback_to_raw`` is ``True``, precursors with
+        fewer than ``min_transitions`` fragments meeting the fragment correlation
+        threshold will still be quantified.
     max_transitions : int, optional
         Maximum number of top-ranked transitions retained per precursor.
+    fallback_to_raw : bool, optional
+        If ``True``, use the sum of all fragment intensities for precursors without
+        sufficient transitions available after refinement. This ensures that all
+        identifications receive a quantity, but may result in lower-quality
+        quantification for precursors without sufficient transitions meeting the
+        ``fragment_score_threshold``. Note that for precursors with sufficient refined
+        fragments, some rows may have zero intensity values (if the refined fragment
+        intensities are all zero) or null intensity values (if all refined fragments
+        are missing from that PSM's reported peaks, which should not happen if the same
+        library is used for all Radiant searches).
+    include_target_key : bool, optional
+        Include Radiant ``TargetKey`` in the precursor key. This is the default
+        because the same peptide/charge can be observed in different isolation
+        windows. Set to ``False`` to refine transitions only by peptide and charge.
     num_fragments : int, optional
         Number of Radiant fragment columns to inspect. Radiant full reports are
         expected to provide ``MzSearched{i}``, ``CosineSimToAnchor{i}``, and
@@ -160,6 +176,7 @@ def quantify_radiant(
         precursor_keys=precursor_keys,
         qvalue_threshold=qvalue_threshold,
         num_fragments=num_fragments,
+        fallback_to_raw=fallback_to_raw,
     )
 
     refined_precursors = _select_refined_transitions(
@@ -181,6 +198,7 @@ def quantify_radiant(
         precursor_keys=precursor_keys,
         intensity_column=intensity_column,
         num_fragments=num_fragments,
+        fallback_to_raw=fallback_to_raw,
     )
 
     quantified = _wrap_intensity_dataset(
@@ -247,6 +265,7 @@ def _validate_required_columns(
     precursor_keys: _Sequence[str],
     qvalue_threshold: _Optional[float],
     num_fragments: int,
+    fallback_to_raw: bool,
 ) -> None:
     required = {
         sample_column,
@@ -266,6 +285,9 @@ def _validate_required_columns(
                 "qvalue_threshold=None to learn transitions without q-values"
             )
         required.add(dset.qvalue_column)
+
+    if fallback_to_raw:
+        required.add(_RAW_INTENSITY_COLUMN)
 
     available = set(dset.data.columns)
     missing = sorted(
@@ -418,6 +440,7 @@ def _add_refined_intensity_column(
     precursor_keys: _Sequence[str],
     intensity_column: str,
     num_fragments: int,
+    fallback_to_raw: bool,
 ):
     joined = dset.data.alias("dataset").join(
         refined_precursors.alias("refined"),
@@ -460,7 +483,22 @@ def _add_refined_intensity_column(
     refined_intensity = _fns.when(
         fragments_found > 0,
         _sum_array(intensity_terms),
-    ).otherwise(_fns.lit(None).cast("double"))
+    ).otherwise(
+        # No fragments match, but we have refined transitions -- give null
+        # even when fallback_to_raw is True, because we need to only use
+        # the refined transitions -- we must ensure that quantification is
+        # consistent across all PSMs for the precursor.
+        _fns.when(
+            _fns.array_size(selected_mzs) > 0,
+            _fns.lit(None),
+        )
+        .otherwise(
+            _fns.col(_RAW_INTENSITY_COLUMN)
+            if fallback_to_raw
+            else _fns.lit(None)
+        )
+        .cast("double")
+    )
 
     output_column_names = {
         _unquote_column(intensity_column),
