@@ -13,10 +13,10 @@ on:
 
 jobs:
   build:
-    runs-on: [self-hosted, aws-master, X64]
-    #    strategy:
-    #      matrix:
-    #        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -38,4 +38,10 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics --extend-exclude=build/
     - name: Test with pytest
       run: |
-        python -m pytest
+        pytest
+      if: runner.os != 'macOS'
+    - name: Test with pytest (macOS)
+      run: |
+        export JAVA_HOME="${JAVA_HOME_17_arm64}"
+        pytest
+      if: runner.os == 'macOS'
