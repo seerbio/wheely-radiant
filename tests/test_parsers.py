@@ -9,9 +9,60 @@ import pytest
 
 from wheely.mammoth import PsmDataset
 from wheely.mammoth.spectra import SpectraDataset
+from wheely.mammoth.spectra.dataset import (
+    IonMobilityDatasetBase,
+    IonMobilitySpectraDatasetBase,
+)
 
+from wheely_radiant.dataset import (
+    RadiantDataset,
+    RadiantIonMobilityDataset,
+    RadiantIonMobilitySpectraDataset,
+    RadiantSpectraDataset,
+)
 from wheely_radiant.scoring import _schemes
 from wheely_radiant.parsers import *
+from wheely_radiant.parsers import _get_col_semantics
+
+
+@pytest.mark.parametrize(
+    "columns,use_iim,expected",
+    [
+        (["IIMEmpirical", "IonMobilityFound"], True, "IIMEmpirical"),
+        (["IIMEmpirical", "IonMobilityFound"], False, "IonMobilityFound"),
+        (["IonMobilityFound"], None, "IonMobilityFound"),
+        ([], None, None),
+    ],
+)
+def test_get_col_semantics_selects_ion_mobility(columns, use_iim, expected):
+    col_semantics, _ = _get_col_semantics(
+        ["discriminateScore", *columns], use_iim=use_iim
+    )
+    assert col_semantics.get("ion_mobility_column") == expected
+
+
+@pytest.mark.parametrize(
+    "columns,use_iim,missing",
+    [
+        (["IonMobilityFound"], True, "IIMEmpirical"),
+        (["IIMEmpirical"], False, "IonMobilityFound"),
+    ],
+)
+def test_get_col_semantics_requires_explicit_ion_mobility_column(
+    columns, use_iim, missing
+):
+    with pytest.raises(ValueError, match=missing):
+        _get_col_semantics(["discriminateScore", *columns], use_iim=use_iim)
+
+
+def test_ion_mobility_dataset_classes_use_extended_bases():
+    assert IonMobilityDatasetBase in RadiantIonMobilityDataset.__mro__
+    assert (
+        IonMobilitySpectraDatasetBase
+        in RadiantIonMobilitySpectraDataset.__mro__
+    )
+    assert IonMobilityDatasetBase not in RadiantDataset.__mro__
+    assert IonMobilitySpectraDatasetBase not in RadiantSpectraDataset.__mro__
 
 
 @pytest.mark.parametrize(

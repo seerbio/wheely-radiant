@@ -9,6 +9,8 @@ from wheely.mammoth.semantics import (
     RT_IN_SECONDS as _RT_IN_SECONDS,
 )
 from wheely.mammoth.spectra.dataset import (
+    IonMobilityDatasetBase as _IonMobilityDatasetBase,
+    IonMobilitySpectraDatasetBase as _IonMobilitySpectraDatasetBase,
     PrecursorDatasetBase as _PrecursorDatasetBase,
     SpectraDatasetMixin as _SpectraDatasetMixin,
 )
@@ -142,6 +144,152 @@ class RadiantSpectraDataset(RadiantDataset, _SpectraDatasetMixin):
             data,
             **dict(
                 dict(
+                    peaklist_column=self.peaklist_column,
+                ),
+                **kwargs,
+            ),
+        )
+
+
+class RadiantIonMobilityDataset(_PsmDataset, _IonMobilityDatasetBase):
+    """Radiant PSMs with an ion mobility measurement."""
+
+    def __init__(
+        self,
+        psms,
+        target_column,
+        score_columns,
+        spectrum_columns,
+        charge_column,
+        rt_column,
+        ion_mobility_column,
+        peptide_column,
+        protein_column,
+        protein_delim=None,
+        mz_column="mz",
+        semantics: _Optional[_Mapping[str, _SemanticInfo]] = None,
+    ):
+        _PsmDataset.__init__(
+            self,
+            psms,
+            target_column=target_column,
+            score_columns=score_columns,
+            spectrum_columns=spectrum_columns,
+            peptide_column=peptide_column,
+            charge_column=charge_column,
+            protein_column=protein_column,
+            protein_delim=protein_delim,
+            semantics=semantics,
+        )
+        _IonMobilityDatasetBase.__init__(
+            self,
+            psms,
+            spectrum_columns,
+            charge_column,
+            mz_column,
+            rt_column,
+            ion_mobility_column,
+            semantics=semantics,
+        )
+
+    @property
+    def columns(self):
+        return [
+            *self.score_columns,
+            *self.spectrum_columns,
+            self.target_column,
+            self.peptide_column,
+            self.protein_column,
+            self.charge_column,
+            self.mz_column,
+            self.rt_column,
+            self.ion_mobility_column,
+        ]
+
+    def with_data(self, data, **kwargs):
+        return super().with_data(
+            data,
+            **dict(
+                dict(
+                    charge_column=self.charge_column,
+                    rt_column=self.rt_column,
+                    mz_column=self.mz_column,
+                    ion_mobility_column=self.ion_mobility_column,
+                ),
+                **kwargs,
+            ),
+        )
+
+
+class RadiantIonMobilitySpectraDataset(
+    _PsmDataset, _IonMobilitySpectraDatasetBase
+):
+    """Radiant PSMs with peaklists and an ion mobility measurement."""
+
+    def __init__(
+        self,
+        psms,
+        target_column,
+        score_columns,
+        spectrum_columns,
+        charge_column,
+        rt_column,
+        ion_mobility_column,
+        peptide_column,
+        protein_column,
+        protein_delim=None,
+        mz_column="mz",
+        peaklist_column="peaklist",
+        semantics: _Optional[_Mapping[str, _SemanticInfo]] = None,
+    ):
+        _PsmDataset.__init__(
+            self,
+            psms,
+            target_column=target_column,
+            score_columns=score_columns,
+            spectrum_columns=spectrum_columns,
+            peptide_column=peptide_column,
+            charge_column=charge_column,
+            protein_column=protein_column,
+            protein_delim=protein_delim,
+            semantics=semantics,
+        )
+        _IonMobilitySpectraDatasetBase.__init__(
+            self,
+            psms,
+            spectrum_columns,
+            charge_column,
+            mz_column,
+            rt_column,
+            peaklist_column,
+            ion_mobility_column,
+            semantics=semantics,
+        )
+
+    @property
+    def columns(self):
+        return [
+            *self.score_columns,
+            *self.spectrum_columns,
+            self.target_column,
+            self.peptide_column,
+            self.protein_column,
+            self.charge_column,
+            self.mz_column,
+            self.rt_column,
+            self.ion_mobility_column,
+            self.peaklist_column,
+        ]
+
+    def with_data(self, data, **kwargs):
+        return super().with_data(
+            data,
+            **dict(
+                dict(
+                    charge_column=self.charge_column,
+                    rt_column=self.rt_column,
+                    mz_column=self.mz_column,
+                    ion_mobility_column=self.ion_mobility_column,
                     peaklist_column=self.peaklist_column,
                 ),
                 **kwargs,
