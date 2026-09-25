@@ -48,39 +48,3 @@ To load raw PSM scores from a Radiant Parquet (`.radiantDIA`) file, use the func
 To read multiple files, pass a tuple, list, array, or series of file paths.
 Currently only full paths are supported; you can not pass wildcard ("glob")
 paths to the function.
-
-## Isobaric Fragment Competition (Opt-In)
-
-Full native reports can contain several coeluting, equal-mass peptide
-assignments supported mostly by the same fragment traces. The single-cell
-branch adds a conservative, per-run single-assignment option:
-
-```python
-from wheely_radiant.competition import compete_isobaric_features
-
-resolved = compete_isobaric_features(
-    ds,
-    audit_location="new-competition-audit.parquet",
-    precursor_ppm=5.0,
-    fragment_ppm=20.0,
-    min_shared_fragments=4,
-)
-```
-
-Competition requires the same precursor charge, matching mass, overlapping
-peak apices, and at least four distinct supported shared fragment traces.
-The largest unshared cosine-squared-weighted fragment intensity determines the
-retained assignment. All-zero unshared evidence leaves the component unresolved
-and rejects it. Exact evidence/score ties favor ordinary decoys. Protein
-accessions, organism/entrapment labels and q-values are never selection inputs.
-
-The optional audit preserves all rows and four `isobaric_*` annotations; existing
-audit files are never overwritten. A singleton has group size 1, unique fragment
-count -1 and undefined unique intensity because no competitor was evaluated.
-Work is partitioned by run, with a default 500,000-row per-worker memory guard.
-
-Re-estimate confidence after competition. This option does not establish 1%
-empirical FDR, resolve all sequence ambiguity, or localize PTMs. "Unshared"
-refers only to other candidates' extracted fragment lists, not every possible
-theoretical ion. Real coeluting isobaric peptides can be lost. Defaults remain
-unchanged; evaluate entrapment, sensitivity and quantification for your assay.
