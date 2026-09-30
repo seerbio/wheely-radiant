@@ -30,7 +30,9 @@ from wheely_radiant.parsers import _get_col_semantics
     [
         (["IIMEmpirical", "IonMobilityFound"], True, "IIMEmpirical"),
         (["IIMEmpirical", "IonMobilityFound"], False, "IonMobilityFound"),
-        (["IonMobilityFound"], None, "IonMobilityFound"),
+        (["IIMEmpirical", "IonMobilityFound"], None, "IIMEmpirical"),
+        (["IIMEmpirical"], None, "IIMEmpirical"),
+        (["IonMobilityFound"], None, None),
         ([], None, None),
     ],
 )
