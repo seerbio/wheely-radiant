@@ -93,7 +93,7 @@ def read_radiant_features(
     use_iim : bool, optional
         If ``True``, require and use ``IIMEmpirical`` for ion mobility. If
         ``False``, require and use ``IonMobilityFound``. If ``None``, use
-        ``IonMobilityFound`` when present and otherwise omit ion mobility.
+        ``IIMEmpirical`` when present and otherwise omit ion mobility.
 
     Returns
     -------
@@ -309,11 +309,12 @@ def _get_col_semantics(columns, charge_col=None, use_irt=True, use_iim=None):
 
 
 def _get_ion_mobility_column(columns, use_iim=None):
+    if use_iim is None:
+        return "IIMEmpirical" if "IIMEmpirical" in columns else None
+
     requested = "IIMEmpirical" if use_iim else "IonMobilityFound"
     if requested in columns:
         return requested
-    if use_iim is None:
-        return None
     raise ValueError(
         f"Requested ion mobility column {requested!r} was not found in "
         f"Radiant results columns: {list(columns)}"
