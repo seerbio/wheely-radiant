@@ -41,6 +41,8 @@ from wheely.mammoth.spectra.utils import (
 
 from .dataset import (
     RadiantDataset as _RadiantDataset,
+    RadiantIonMobilityDataset as _RadiantIonMobilityDataset,
+    RadiantIonMobilitySpectraDataset as _RadiantIonMobilitySpectraDataset,
     RadiantSpectraDataset as _RadiantSpectraDataset,
 )
 from .scoring import get_scheme as _get_scoring_scheme
@@ -62,6 +64,7 @@ def read_radiant_features(
     ] = None,
     read_spectra: bool = False,
     use_irt: bool = True,
+    use_iim: _Optional[bool] = None,
 ) -> _PsmDataset:
     """
     Read scored PSMs from `.radiantDIA` files.
@@ -87,6 +90,10 @@ def read_radiant_features(
         If ``True``, the returned dataset will use empirical IRT values for the retention time column, ensuring that RTs
         across multiple files are well-aligned to a consistent RT space. Otherwise, the measured retention time in each
         file will be used directly.
+    use_iim : bool, optional
+        If ``True``, require and use ``IIMEmpirical`` for ion mobility. If
+        ``False``, require and use ``IonMobilityFound``. If ``None``, use
+        ``IonMobilityFound`` when present and otherwise omit ion mobility.
 
     Returns
     -------
@@ -176,7 +183,10 @@ def read_radiant_features(
     )
 
     col_semantics, semantics = _get_col_semantics(
-        psms_df.columns, charge_col=charge_col, use_irt=use_irt
+        psms_df.columns,
+        charge_col=charge_col,
+        use_irt=use_irt,
+        use_iim=use_iim,
     )
 
     semantics = dict(
@@ -188,7 +198,12 @@ def read_radiant_features(
     _logger.debug("Additional semantic tags: %s", semantics)
 
     if read_spectra:
-        return _RadiantSpectraDataset(
+        dataset_type = (
+            _RadiantIonMobilitySpectraDataset
+            if "ion_mobility_column" in col_semantics
+            else _RadiantSpectraDataset
+        )
+        return dataset_type(
             psms_df,
             target_column="target",
             score_columns=scoring,
@@ -197,7 +212,12 @@ def read_radiant_features(
             semantics=semantics,
         )
     else:
-        return _RadiantDataset(
+        dataset_type = (
+            _RadiantIonMobilityDataset
+            if "ion_mobility_column" in col_semantics
+            else _RadiantDataset
+        )
+        return dataset_type(
             psms_df,
             target_column="target",
             score_columns=scoring,
@@ -236,68 +256,91 @@ def _is_valid_peak(pk_col: _Column) -> _Column:
     return (pk_col.getItem(0) > 0) & (pk_col.getItem(1) > 0)
 
 
-def _get_col_semantics(columns, charge_col=None, use_irt=True):
+def _get_col_semantics(columns, charge_col=None, use_irt=True, use_iim=None):
     if "discriminateScore" not in columns:
-        return (
-            dict(
-                spectrum_columns=[
-                    "filename",
-                    "PeptideStringWithMods",
-                    "Charge",
-                    "ScanNumber",
-                ],
-                charge_column=charge_col or "Charge",
-                rt_column=(
-                    "IRTEmpirical"
-                    if "IRTEmpirical" in columns and use_irt
-                    else "ScanTime"
-                ),
-                peptide_column="PeptideStringWithMods",
-                protein_column="ProteinGroup",
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "PeptideStringWithMods",
+                "Charge",
+                "ScanNumber",
+            ],
+            charge_column=charge_col or "Charge",
+            rt_column=(
+                "IRTEmpirical"
+                if "IRTEmpirical" in columns and use_irt
+                else "ScanTime"
             ),
-            {
-                "ScanNumber": _SCAN_NUMBER,
-                "ScanTime": _RT_IN_SECONDS,
-                "ScanTimeStart": _RT_START_IN_SECONDS,
-                "ScanTimeEnd": _RT_STOP_IN_SECONDS,
-                "IRTEmpirical": _NORMALIZED_RT_IN_SECONDS,
-                "Mass": _THEORETICAL_MONO_MASS,
-            },
+            peptide_column="PeptideStringWithMods",
+            protein_column="ProteinGroup",
         )
+        semantics = {
+            "ScanNumber": _SCAN_NUMBER,
+            "ScanTime": _RT_IN_SECONDS,
+            "ScanTimeStart": _RT_START_IN_SECONDS,
+            "ScanTimeEnd": _RT_STOP_IN_SECONDS,
+            "IRTEmpirical": _NORMALIZED_RT_IN_SECONDS,
+            "Mass": _THEORETICAL_MONO_MASS,
+        }
+
+        ion_mobility_column = _get_ion_mobility_column(columns, use_iim)
+        if ion_mobility_column is not None:
+            col_semantics["ion_mobility_column"] = ion_mobility_column
+
+        return col_semantics, semantics
     else:
         # Support legacy files with deprecated column names
-        return (
-            dict(
-                spectrum_columns=[
-                    "filename",
-                    "peptideStringWithMods",
-                    "charge",
-                    "scanNumber",
-                ],
-                charge_column=charge_col or "charge",
-                rt_column="scanTime",
-                peptide_column="peptideStringWithMods",
-                protein_column="proteinGroup",
-            ),
-            None,
+        col_semantics = dict(
+            spectrum_columns=[
+                "filename",
+                "peptideStringWithMods",
+                "charge",
+                "scanNumber",
+            ],
+            charge_column=charge_col or "charge",
+            rt_column="scanTime",
+            peptide_column="peptideStringWithMods",
+            protein_column="proteinGroup",
         )
+        ion_mobility_column = _get_ion_mobility_column(columns, use_iim)
+        if ion_mobility_column is not None:
+            col_semantics["ion_mobility_column"] = ion_mobility_column
+        return col_semantics, None
+
+
+def _get_ion_mobility_column(columns, use_iim=None):
+    requested = "IIMEmpirical" if use_iim else "IonMobilityFound"
+    if requested in columns:
+        return requested
+    if use_iim is None:
+        return None
+    raise ValueError(
+        f"Requested ion mobility column {requested!r} was not found in "
+        f"Radiant results columns: {list(columns)}"
+    )
 
 
 def read_radiant_spectra(
     psms: _PsmDataset,
     use_irt: bool = True,
+    use_iim: _Optional[bool] = None,
     **kwargs,
 ) -> _SpectraDataset:
     # Try to short-circuit by reannotating known columns
     if any(c in psms.data.columns for c in ["mzFoundMeanVec", "MzFoundMean1"]):
         col_semantics, semantics = _get_col_semantics(
-            psms.data.columns, use_irt=use_irt
+            psms.data.columns, use_irt=use_irt, use_iim=use_iim
         )
 
         _logger.debug("Using column semantics: %s", col_semantics)
         _logger.debug("Additional semantic tags: %s", semantics)
 
-        pass_thru_dset = _RadiantSpectraDataset(
+        dataset_type = (
+            _RadiantIonMobilitySpectraDataset
+            if "ion_mobility_column" in col_semantics
+            else _RadiantSpectraDataset
+        )
+        pass_thru_dset = dataset_type(
             psms.data.withColumn(
                 "peaklist", parse_peaklist(psms.data.columns)
             ),
@@ -334,6 +377,8 @@ def read_radiant_spectra(
             location,
             spark=psms.data.sparkSession,
             read_spectra=True,
+            use_irt=use_irt,
+            use_iim=use_iim,
             **kwargs,
         ),
     )
